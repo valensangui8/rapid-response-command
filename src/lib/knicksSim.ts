@@ -58,7 +58,7 @@ function carMin(sim: Sim, st: State, e: Edge) {
 function walkMin(sim: Sim, st: State, e: Edge) {
   const s = st.edges[e.key]?.status;
   if (s === "closed") return Infinity;
-  return e.minutes * (1 + 1.4 * walkCrowd(sim, st, e.key)) * (s === "unconfirmed" ? 1.8 : 1);
+  return e.minutes * (1 + 0.7 * walkCrowd(sim, st, e.key)) * (s === "unconfirmed" ? 1.8 : 1);
 }
 
 /** Up to k distinct routes: rerun Dijkstra, making blocks used by earlier routes more expensive. */
@@ -111,7 +111,6 @@ function trace(edges: Edge[], from: string) {
   return { path, steps };
 }
 
-const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7).toString(36);
 const level = (x: number) => (x > 0.8 ? 3 : x > 0.5 ? 2 : x > 0.25 ? 1 : 0);
 
 export function options(mode: Mode, from: string, dest: Dest, sim: Sim, st: State): Option[] {
@@ -126,8 +125,8 @@ export function options(mode: Mode, from: string, dest: Dest, sim: Sim, st: Stat
       const lv = edges.map((e) => (mode === "car" ? carCong(sim, e.key) : walkCrowd(sim, st, e.key)));
       const moveMin = edges.reduce((x, e) => x + cost(e), 0);
       const freeMin = edges.reduce((x, e) => x + free(e), 0);
-      const key = `${mode}:${dest.id}:${hash(edges.map((e) => e.key).join())}`;
       const via = steps.map((s) => s.text.split(" · ")[0].replace(/^(Head along|Turn onto) /, "")).filter((r) => r.includes("Ave")).slice(0, 2).join(" → ");
+      const key = `${mode}:${dest.id}:${via}`;
       const jams = edges.filter((_, j) => lv[j] > 0.5).length;
       if (t.via) steps.push({ text: `Continue via ${t.via} · ~${t.beyond} min`, from: edges.length, to: edges.length });
       return {
@@ -159,6 +158,8 @@ export function options(mode: Mode, from: string, dest: Dest, sim: Sim, st: Stat
       });
     }
   }
+  const seenKeys = new Set<string>();
+  out.forEach((o, i) => { if (seenKeys.has(o.key)) o.key += `#${i}`; seenKeys.add(o.key); });
   // Policy: time first, but heavy crowds cost extra (safety), so the app doesn't send everyone into the crush.
   out.forEach((o) => (o.score = o.totalMin + 18 * Math.max(0, o.crowd - 0.7)));
   out.sort((x, y) => x.score - y.score);

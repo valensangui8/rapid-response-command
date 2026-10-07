@@ -14,7 +14,6 @@ const MODES: { id: Mode; icon: string; label: string }[] = [
 const KIND: Record<string, string> = { road_closed: "🚧 Closed", crowd: "👥 Crowd", station_closed: "⛔ Station closed", station_crowded: "⏳ Station packed", reopened: "✅ Reopened", hazard: "🔥 Hazard", info: "💬 Rumor/info" };
 const MSG = { lat: coord(2, 31)[0], lng: coord(2, 31)[1] };
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${Math.round(m % 60)}` : `${Math.round(m)}`);
-const clock = (m: number) => new Date(Date.now() + m * 60_000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`);
 
 function snap(p: LatLng) {
@@ -52,6 +51,13 @@ export default function KnicksApp() {
   const [sheet, setSheet] = useState<"routes" | "alerts">("routes");
   const [toast, setToast] = useState<string | null>(null);
   const prevRec = useRef<Record<string, string>>({});
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const clock = (m: number) => (now ? new Date(now + m * 60_000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "--");
 
   // Live GPS
   useEffect(() => {
@@ -177,7 +183,7 @@ export default function KnicksApp() {
         )}
 
         {/* ── Bottom sheet ── */}
-        <div className="absolute inset-x-0 bottom-0 z-[1000] max-h-[52%] overflow-y-auto rounded-t-3xl bg-white px-3 pb-4 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,.15)]">
+        <div className="absolute inset-x-0 bottom-0 z-[1000] max-h-[46%] overflow-y-auto rounded-t-3xl bg-white px-3 pb-4 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,.15)]">
           <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
           {nav ? (
             <div className="flex items-center gap-3">

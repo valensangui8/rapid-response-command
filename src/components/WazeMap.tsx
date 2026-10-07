@@ -21,7 +21,7 @@ function Camera({ me, focus, follow }: { me: LatLng; focus: [number, number][]; 
   const sig = focus.length ? `${focus[0]}|${focus.at(-1)}` : "";
   useEffect(() => {
     if (follow || focus.length < 2) return;
-    map.fitBounds(L.latLngBounds([...focus, [me.lat, me.lng]]), { paddingTopLeft: [30, 170], paddingBottomRight: [30, 330], maxZoom: 16 });
+    map.fitBounds(L.latLngBounds([...focus, [me.lat, me.lng]]), { paddingTopLeft: [20, 150], paddingBottomRight: [60, 300], maxZoom: 16 });
   }, [sig, follow]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
@@ -41,7 +41,7 @@ export default function WazeMap({
   const others = opts.filter((o) => o !== sel);
   return (
     <MapContainer center={[me.lat, me.lng]} zoom={15} className="h-full w-full" zoomControl={false} attributionControl={false} preferCanvas>
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" subdomains="abcd" />
+      <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}" />
       <Camera me={me} focus={sel?.path ?? []} follow={follow} />
       <LongPress onPick={onPick} />
 
@@ -50,8 +50,8 @@ export default function WazeMap({
         const s = state.edges[e.key]?.status;
         if (s === "closed") return <Polyline key={e.key} positions={e.path} pathOptions={{ color: "#b91c1c", weight: 6, opacity: 0.8, dashArray: "2 6" }}><Tooltip sticky>⛔ {e.label} closed</Tooltip></Polyline>;
         const v = mode === "car" ? carCong(sim, e.key) : walkCrowd(sim, state, e.key);
-        if (v < 0.45 && s !== "unconfirmed") return null;
-        return <Polyline key={e.key} positions={e.path} pathOptions={{ color: s === "unconfirmed" ? "#a16207" : LEVEL[v > 0.8 ? 3 : 2], weight: 4, opacity: 0.55 }} />;
+        if (v < 0.65 && s !== "unconfirmed") return null;
+        return <Polyline key={e.key} positions={e.path} pathOptions={{ color: s === "unconfirmed" ? "#a16207" : LEVEL[v > 0.8 ? 3 : 2], weight: 4, opacity: 0.4 }} />;
       })}
 
       {others.map((o) => (
