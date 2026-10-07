@@ -6,6 +6,7 @@ export const restaurant = {
   outageSince: "1:12 PM",
   now: "2:05 PM",
   turnMinutes: 90,
+  prepaidPerPerson: 95, // Resy prepaid policy (chef's tasting)
   typicalCovers: 52, // avg Tuesday covers (POS history)
   perk: "a complimentary glass of prosecco",
   reconfirmPerk: "a dessert on the house",
@@ -32,6 +33,7 @@ export type Booking = {
   status: "verified" | "unverified" | "requested" | "cancelled" | "waitlist";
   perk?: "granted" | "pending_check";
   dessert?: boolean;
+  paid?: { last4: string; brand: string; amount: number };
   referredBy?: string;
   table: string | null;
   vip: boolean;
@@ -67,4 +69,14 @@ export const campaignReplies: Message[] = [
   { id: "c5", channel: "instagram", from: "@ana_eats", received: "2:31 PM", text: "Reservation for Ana Torres 2 ppl 6:30 tonight! Can't wait" },
   { id: "c6", channel: "instagram", from: "@mike.r", received: "2:33 PM", text: "My coworker Elena Russo has a table for 4 at 8pm tonight, she's not on IG. Her number is 646-555-0172 🍰" },
   { id: "c7", channel: "x", from: "@brooklyn_beth", received: "2:35 PM", text: "@LupaTrattoria my sister Kate Doyle booked 2 at 9:30 tonight for her birthday!!" },
+];
+
+/** Charges from the payment processor behind Resy (Stripe). Only last4 — never full card numbers. */
+export type Charge = { id: string; amount: number; created: string; cardholder: string; brand: string; last4: string; email: string | null; description: string };
+export const charges: Charge[] = [
+  { id: "ch_1", amount: 190, created: "Mon 4:12 PM", cardholder: "S KIM", brand: "Visa", last4: "4242", email: "sarah.kim@gmail.com", description: "Resy prepaid reservation · Lupa Trattoria" },
+  { id: "ch_2", amount: 570, created: "Tue 11:02 AM", cardholder: "MARCO BELLINI", brand: "Amex", last4: "1005", email: null, description: "Resy prepaid reservation · Lupa Trattoria" },
+  { id: "ch_3", amount: 285, created: "Tue 6:40 PM", cardholder: "R OKONKWO", brand: "Mastercard", last4: "8831", email: "ruth.okonkwo@outlook.com", description: "Resy prepaid reservation #R-55102 · Lupa Trattoria" },
+  { id: "ch_4", amount: 28.5, created: "Today 12:15 PM", cardholder: "J LIU", brand: "Visa", last4: "7719", email: null, description: "Lunch · table 4 · Lupa Trattoria POS" },
+  { id: "ch_5", amount: 100, created: "Today 1:03 PM", cardholder: "D PARK", brand: "Visa", last4: "3390", email: "dpark@gmail.com", description: "Digital gift card · Lupa Trattoria" },
 ];

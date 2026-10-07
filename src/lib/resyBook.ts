@@ -61,7 +61,19 @@ function backfill(m: Message, x: MessageExtraction): MessageExtraction {
     const mt = t.match(/(\d{1,2})(?::(\d{2}))?\s*(pm|p\.m\.)/i);
     if (mt) time = `${(Number(mt[1]) % 12) + 12}:${mt[2] ?? "00"}`;
   }
-  return { ...x, partySize: Number.isFinite(size) ? size : null, time };
+  // Different free models format differently: normalize "8:30 PM" -> "20:30", "en" -> "English".
+  if (time && !/^\d{2}:\d{2}$/.test(time)) {
+    const mt = time.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    if (mt) {
+      let h = Number(mt[1]);
+      if (/pm/i.test(mt[3] ?? "") && h < 12) h += 12;
+      if (!mt[3] && h < 11) h += 12; // dinner context
+      time = `${String(h).padStart(2, "0")}:${mt[2] ?? "00"}`;
+    }
+  }
+  const langMap: Record<string, string> = { en: "English", english: "English", sms: "English", es: "Spanish", spanish: "Spanish", "español": "Spanish" };
+  const language = langMap[(x.language || "").toLowerCase()] ?? x.language;
+  return { ...x, partySize: Number.isFinite(size) ? size : null, time, language };
 }
 
 export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: MessageExtraction): { book: Booking[]; actions: Action[]; outcome: string } {

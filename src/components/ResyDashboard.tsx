@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { campaignReplies, messages as demoMessages, restaurant, type Booking, type Message } from "@/lib/resy";
-import type { Campaign, MessageExtraction, MessageJudgment } from "@/lib/resyAi";
+import { campaignReplies, messages as demoMessages, restaurant, type Booking, type Charge, type Message } from "@/lib/resy";
+import type { Campaign, ChargeJudgment, MessageExtraction, MessageJudgment } from "@/lib/resyAi";
 import { fmt, reconcile, resetIds, type Action } from "@/lib/resyBook";
 import { JevFace } from "./JevStage";
 
@@ -306,6 +306,14 @@ export default function ResyDashboard() {
               </div>
             </div>
           </div>
+          <PaymentsPanel
+            book={book}
+            onApply={(nextBook, newActions) => {
+              bookRef.current = nextBook;
+              setBook(nextBook);
+              setActions((a) => [...a, ...newActions]);
+            }}
+          />
           <BackupPanel book={book} />
           <ResyBackPanel book={book} feed={feed} />
         </section>
@@ -359,7 +367,7 @@ function Row({ table, book }: { table: { id: string; seats: number }; book: Book
               className={`jev-pop absolute top-0.5 h-5 truncate rounded border px-1 leading-5 ${STATUS_COLOR[b.status]}`}
               style={{ left: `${(i / restaurant.slots.length) * 100}%`, width: `${w}%` }}
             >
-              {b.vip ? "★ " : ""}{b.perk === "granted" ? "🎁 " : ""}{b.referredBy ? "🤝 " : ""}{b.dessert ? "🍰 " : ""}{b.name} · {b.partySize}
+              {b.paid ? "💳 " : ""}{b.vip ? "★ " : ""}{b.perk === "granted" ? "🎁 " : ""}{b.referredBy ? "🤝 " : ""}{b.dessert ? "🍰 " : ""}{b.name} · {b.partySize}
             </div>
           );
         })}
@@ -490,6 +498,88 @@ function ResyBackPanel({ book, feed }: { book: Booking[]; feed: Judged[] }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type ChargeRow = { ch: Charge; r: ChargeJudgment };
+
+/** Payments as a validation layer: money is the strongest proof a booking exists. */
+function PaymentsPanel({ book, onApply }: { book: Booking[]; onApply: (b: Booking[], a: Action[]) => void }) {
+  const [rows, setRows] = useState<ChargeRow[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [last4, setLast4] = useState("");
+  const [door, setDoor] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function match() {
+    setBusy(true);
+    const refs = book.filter((b) => b.status !== "cancelled" && b.status !== "waitlist").map((b) => ({ id: b.id, summary: `${b.name}, party of ${b.partySize} at ${fmt(b.time)}` }));
+    const r = await fetch("/api/resy/payments", { method: "POST", body: JSON.stringify({ book: refs }) });
+    const { charges, results } = (await r.json()) as { charges: Charge[]; results: ChargeJudgment[] };
+    const out: ChargeRow[] = charges.map((ch) => ({ ch, r: results.find((x) => x.chargeId === ch.id)! }));
+    let next = book;
+    const acts: Action[] = [];
+    for (const { ch, r: j } of out) {
+      if (j.isReservation < 0.6) continue;
+      if (j.matchOf) {
+        next = next.map((b) => (b.id === j.matchOf ? { ...b, paid: { last4: ch.last4, brand: ch.brand, amount: ch.amount }, status: "verified", sources: [...b.sources, ch.id] } : b));
+      } else {
+        const guests = Math.round(ch.amount / restaurant.prepaidPerPerson);
+        acts.push({
+          id: `pay-${ch.id}`,
+          kind: "reconfirm",
+          bookingId: null,
+          title: `💳 Recovered from payment: ${ch.cardholder}`,
+          detail: `$${ch.amount} prepaid = ${guests} guests · time unknown · ${ch.email ? `email ${ch.email}` : `card ${ch.brand} ••${ch.last4}`}`,
+          priority: 85,
+          status: "pending",
+          language: "English",
+        });
+      }
+    }
+    setRows(out);
+    onApply(next, acts);
+    setBusy(false);
+  }
+
+  function check() {
+    const d = last4.trim();
+    const b = book.find((x) => x.paid?.last4 === d && x.status !== "cancelled");
+    if (b) return setDoor({ ok: true, text: `✓ ${b.name} · ${b.partySize} @ ${fmt(b.time)} · ${b.table ?? "seat now"} · prepaid $${b.paid!.amount}` });
+    const orphan = rows.find((x) => x.ch.last4 === d && x.r.isReservation >= 0.6 && !x.r.matchOf);
+    if (orphan) return setDoor({ ok: true, text: `✓ Prepaid $${orphan.ch.amount} (${Math.round(orphan.ch.amount / restaurant.prepaidPerPerson)} guests) by ${orphan.ch.cardholder} — not in the book: seat at buffer table` });
+    setDoor({ ok: false, text: "No prepaid booking on this card → check name in the book or offer the waitlist" });
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">💳 Payment validation · money is the strongest proof</h2>
+        <button onClick={match} disabled={busy || !book.length} className="rounded bg-indigo-600 px-2 py-1 font-semibold disabled:opacity-40">
+          {busy ? "Jev matching…" : "Match Resy prepayments (Stripe)"}
+        </button>
+      </div>
+      <p className="mb-2 text-slate-500">Prepaid tables: ${restaurant.prepaidPerPerson}/guest. Uses amount, time, cardholder & last 4 only — never full card numbers; contact only to confirm their own booking.</p>
+      {rows.length > 0 && (
+        <ul className="mb-2 space-y-1">
+          {rows.map(({ ch, r }) => {
+            const b = book.find((x) => x.id === r.matchOf);
+            const verdict = r.isReservation < 0.6 ? ["text-slate-500", `not a reservation (${Math.round(r.isReservation * 100)}%) → ignored`] : b ? ["text-emerald-400", `= ${b.name} (${Math.round(r.matchProb * 100)}%) → 💳 verified`] : ["text-amber-300", `prepaid, NOT in book → recovered (${Math.round(ch.amount / restaurant.prepaidPerPerson)} guests)`];
+            return (
+              <li key={ch.id} className="flex flex-wrap justify-between gap-2 rounded bg-slate-900 px-2 py-1">
+                <span>{ch.cardholder} · {ch.brand} ••{ch.last4} · ${ch.amount} · {ch.created} · <span className="text-slate-500">{ch.description}</span></span>
+                <span className={`font-semibold ${verdict[0]}`}>{verdict[1]}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <form className="flex items-center gap-2" onSubmit={(e) => (e.preventDefault(), check())}>
+        <span className="font-semibold">🚪 Door check:</span>
+        <input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="last 4 of card" className="w-28 rounded bg-slate-800 px-2 py-1 outline-none" />
+        <button className="rounded bg-slate-700 px-2 py-1">Verify</button>
+        {door && <span className={door.ok ? "text-emerald-400" : "text-red-400"}>{door.text}</span>}
+      </form>
     </div>
   );
 }

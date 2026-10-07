@@ -1,6 +1,7 @@
 import "server-only";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { gen } from "./gen";
 import type { Extraction, Incident, RawReport } from "./types";
 
 /**
@@ -26,8 +27,7 @@ export async function extractReport(report: RawReport): Promise<Extraction> {
   const fallback: Extraction = { summary: report.text.slice(0, 80), language: "unknown", peopleAffected: null, locationHint: "unknown", lat: null, lng: null, mock: true };
   if (!llmAvailable()) return fallback;
   try {
-    const { output } = await generateText({
-      model: FAST_MODEL,
+    const { output } = await gen({
       output: Output.object({ schema: extractionSchema }),
       prompt: `Extract structured fields from this emergency report received in New York City.\nChannel: ${report.source}\nReport: """${report.text}"""`,
     });
@@ -47,23 +47,21 @@ export async function draftAlerts(incidents: Incident[], audience: "public" | "r
     .map((i) => `- [${i.category}, severity ${i.severity.toFixed(1)}/4] ${i.summary}`)
     .join("\n");
   const schema = z.object({ alerts: z.array(z.object({ language: z.string(), text: z.string() })) });
-  const { output } = await generateText({
-    model: LLM_MODEL,
+  const { output } = await gen({
     output: Output.object({ schema }),
     prompt:
       audience === "public"
         ? `Write a public emergency SMS alert (max 300 chars each, plain words, 6th-grade reading level, concrete actions, NO claims beyond the facts) in each of: ${languages.join(", ")}.\nVerified facts:\n${facts}`
         : `Write a terse responder broadcast (max 400 chars) in English only summarizing priorities and asks.\nVerified incidents:\n${facts}`,
   });
-  return { alerts: output.alerts, facts };
+  return { alerts: output.alerts as { language: string; text: string }[], facts };
 }
 
 export async function draftSitrep(incidents: Incident[], briefing: string) {
   const lines = incidents
     .map((i) => `- ${i.id} P${i.priority} [${i.category}] ${i.summary} | reports:${i.reports.length} | status:${i.status}${i.assignedResource ? ` -> ${i.assignedResource}` : ""}${i.needsHuman ? " | NEEDS HUMAN REVIEW" : ""}`)
     .join("\n");
-  const { text } = await generateText({
-    model: LLM_MODEL,
+  const { text } = await gen({
     prompt: `You are the planning chief. Write a situation report for the Incident Commander. Use markdown, max 180 words, sections: Situation, Top 3 priorities (why), Resource gaps, Rumors to counter, Decisions needed now.\nBackground: ${briefing}\nIncidents:\n${lines}`,
   });
   return text;

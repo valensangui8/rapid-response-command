@@ -2,6 +2,7 @@ import "server-only";
 import { choice, noul, score, TypeSafeClient } from "@typesafe-ai/sdk";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { gen } from "./gen";
 import { FAST_MODEL, llmAvailable } from "./llm";
 import { restaurant, type Message } from "./resy";
 
@@ -103,8 +104,7 @@ export async function extractMessage(m: Message): Promise<MessageExtraction> {
   const fallback: MessageExtraction = { name: null, partySize: null, time: null, phone: /\(\d{3}\)/.test(m.from) ? m.from : null, notes: "", language: "unknown" };
   if (!llmAvailable()) return fallback;
   try {
-    const { output } = await generateText({
-      model: FAST_MODEL,
+    const { output } = await gen({
       output: Output.object({ schema }),
       prompt: `Extract reservation details from this message a restaurant received today.\nChannel: ${m.channel}\nFrom: ${m.from}\nMessage: """${m.text}"""`,
     });
@@ -119,8 +119,7 @@ export async function draftReply(kind: string, guest: { name: string; partySize:
   const fallback = `Hi ${guest.name}, this is ${restaurant.name}. Our reservation system is temporarily down, so we're confirming by text: ${guest.partySize} guests at ${guest.time} tonight. Reply YES to confirm or call us. ${extra}`.trim();
   if (!llmAvailable()) return fallback;
   try {
-    const { text } = await generateText({
-      model: FAST_MODEL,
+    const { text } = await gen({
       prompt: `You are the host at ${restaurant.name}. Resy (our booking system) is down. Write ONE warm, short SMS (max 300 chars) in ${language === "unknown" ? "English" : language}. Purpose: ${kind}. Guest: ${guest.name}, party of ${guest.partySize}, ${guest.time} tonight. ${guest.notes ? `Notes: ${guest.notes}.` : ""} ${extra} Ask them to reply YES if relevant. No emojis overload, no promises beyond the facts. Output only the SMS.`,
     });
     return text.trim();
@@ -151,8 +150,7 @@ export async function draftCampaign(): Promise<Campaign> {
   };
   if (!llmAvailable()) return fallback;
   try {
-    const { output } = await generateText({
-      model: FAST_MODEL,
+    const { output } = await gen({
       output: Output.object({ schema: campaignSchema }),
       prompt: `Restaurant ${restaurant.name} in NYC. Our reservation system Resy has been down since ${restaurant.outageSince}. Write a recovery campaign so guests who had a reservation TONIGHT message us their name, time and party size. Reward: ${perk}. Also a referral post: anyone who tells us about a FRIEND with a reservation tonight gets ${restaurant.referralPerk}. Warm, confident, a little playful, never blame Resy harshly. Each piece must clearly ask for: name + time + party size.`,
     });
@@ -160,4 +158,45 @@ export async function draftCampaign(): Promise<Campaign> {
   } catch {
     return fallback;
   }
+}
+
+export type ChargeJudgment = { chargeId: string; isReservation: number; matchOf: string | null; matchProb: number; mock: boolean };
+
+/** Jev links processor charges to tonight's book. */
+export async function judgeCharges(chs: import("./resy").Charge[], book: BookRef[]): Promise<ChargeJudgment[]> {
+  const c = getClient();
+  const mock = (ch: import("./resy").Charge): ChargeJudgment => ({ chargeId: ch.id, isReservation: ch.description.includes("Resy") ? 0.95 : 0.05, matchOf: null, matchProb: 0, mock: true });
+  if (!c) return chs.map(mock);
+  const criteria: Record<string, string | null> = { none: "The charge does not belong to any reservation in `tonights_book`" };
+  for (const b of book.slice(-40)) criteria[b.id] = `Paid for this reservation: ${b.summary}`;
+  return Promise.all(
+    chs.map(async (ch) => {
+      try {
+        const res = await c.systemOne({
+          state: {
+            restaurant_policy: `Prepaid reservations cost $${restaurant.prepaidPerPerson} per guest and are charged at booking time through Resy.`,
+            charge: ch,
+            tonights_book: book.slice(-40),
+          },
+          questions: {
+            is_reservation: noul("Is `charge` a prepayment for a dinner reservation (as opposed to a lunch bill, bar tab, gift card, or other purchase)?"),
+            ...(book.length
+              ? { match: choice("Which reservation in `tonights_book` did `charge` pay for? Compare the cardholder name (cards often show initials + last name), and whether the amount equals the party size times the per-guest price.", criteria) }
+              : {}),
+          },
+        });
+        const a = res.answers as Record<string, any>;
+        const m = a.match;
+        return {
+          chargeId: ch.id,
+          isReservation: a.is_reservation.noul,
+          matchOf: m && m.choice !== "none" && m.probabilities[m.choice] > 0.55 ? m.choice : null,
+          matchProb: m && m.choice !== "none" ? m.probabilities[m.choice] : 0,
+          mock: false,
+        };
+      } catch {
+        return mock(ch);
+      }
+    }),
+  );
 }
