@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { restaurant, type Booking, type Message } from "@/lib/resy";
 import type { MessageExtraction, MessageJudgment } from "@/lib/resyAi";
 import { fmt } from "@/lib/resyBook";
@@ -32,7 +32,10 @@ function speak(text: string, caller = false) {
 export default function VoiceAgent({ ingest, treat }: { ingest: Ingest; treat: (id: string) => void }) {
   const [log, setLog] = useState<Line[]>([]);
   const [state, setState] = useState<"idle" | "ringing" | "talking" | "listening" | "thinking">("idle");
-  const [muted, setMuted] = useState(() => typeof window !== "undefined" && window.location.search.includes("demo=replay"));
+  const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    if (window.location.search.includes("demo=replay")) setMuted(true); // video takes: narration only
+  }, []);
   const recRef = useRef<any>(null);
 
   const say = async (text: string) => {
@@ -98,7 +101,7 @@ export default function VoiceAgent({ ingest, treat }: { ingest: Ingest; treat: (
   }
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
+    <div id="voice" className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <h2 className="mr-auto text-sm font-semibold">☎️ Voice agent · answers the phone all day</h2>
         <span className={`px-1.5 ${state === "idle" ? "" : "pixel-blink"}`}>{{ idle: "● ready", ringing: "☎ RING RING", talking: "🔊 speaking", listening: "🎙 listening", thinking: "… thinking" }[state]}</span>

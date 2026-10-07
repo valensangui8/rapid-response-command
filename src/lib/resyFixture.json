@@ -1,1 +1,881 @@
-{}
+{
+ "judge:New reservation: Sarah Kim, party of 2, Tonight 7:00 PM. Phone (917) 555-0142. Notes: Anniversary": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "question": 0,
+    "irrelevant": 0.01,
+    "new_request": 0.01,
+    "existing_booking": 0.98,
+    "cancel": 0,
+    "modify": 0
+   },
+   "intentConfidence": 0.98,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.83,
+   "urgency": 2.33,
+   "plausible": 0.94,
+   "referral": 0.13,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Sarah Kim",
+   "partySize": 2,
+   "time": "Tonight 7:00 PM",
+   "phone": "(917) 555-0142",
+   "notes": "Anniversary",
+   "language": "English"
+  },
+  "ms": 5337
+ },
+ "judge:New reservation: David Okafor, party of 4, Tonight 7:30 PM. Phone (646) 555-0199.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "new_request": 0.01,
+    "existing_booking": 0.99,
+    "question": 0,
+    "modify": 0,
+    "irrelevant": 0,
+    "cancel": 0
+   },
+   "intentConfidence": 0.99,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.09,
+   "urgency": 2.18,
+   "plausible": 0.96,
+   "referral": 0.12,
+   "mock": false
+  },
+  "extraction": {
+   "name": "David Okafor",
+   "partySize": 4,
+   "time": "19:30",
+   "phone": "(646) 555-0199",
+   "notes": "",
+   "language": "en"
+  },
+  "ms": 1562
+ },
+ "judge:New reservation: Marco Bellini, party of 6, Tonight 8:00 PM. Phone (212) 555-0123. Notes: one guest has a severe nut allergy": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "cancel": 0,
+    "modify": 0,
+    "irrelevant": 0.01,
+    "existing_booking": 0.97,
+    "new_request": 0.02,
+    "question": 0
+   },
+   "intentConfidence": 0.96,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.95,
+   "urgency": 2.24,
+   "plausible": 0.96,
+   "referral": 0.1,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Marco Bellini",
+   "partySize": 6,
+   "time": "20:00",
+   "phone": "(212) 555-0123",
+   "notes": "one guest has a severe nut allergy",
+   "language": "en"
+  },
+  "ms": 1036
+ },
+ "judge:Hi! Just confirming our anniversary dinner tonight at 7, it's Sarah. Could we get a quiet table?": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "question": 0,
+    "existing_booking": 0.9,
+    "cancel": 0,
+    "new_request": 0,
+    "modify": 0.1,
+    "irrelevant": 0
+   },
+   "intentConfidence": 0.88,
+   "matchOf": "B1",
+   "matchConfidence": 1,
+   "manager": 0.8,
+   "urgency": 2.45,
+   "plausible": 0.97,
+   "referral": 0.04,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Sarah",
+   "partySize": null,
+   "time": "19:00",
+   "phone": "(917) 555-0142",
+   "notes": "Anniversary dinner; quiet table",
+   "language": "en"
+  },
+  "ms": 942
+ },
+ "judge:Hi this is Jenny Liu, I booked for 2 at 6:30 tonight through Resy but the app is down and I can't see my reservation, can someone call me back to make sure we're still on?": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "new_request": 0,
+    "question": 0,
+    "existing_booking": 1,
+    "modify": 0,
+    "irrelevant": 0,
+    "cancel": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.18,
+   "urgency": 2.99,
+   "plausible": 0.96,
+   "referral": 0.03,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Jenny Liu",
+   "partySize": 2,
+   "time": "6:30",
+   "phone": "(347) 555-0177",
+   "notes": "Originally booked through Resy",
+   "language": "en"
+  },
+  "ms": 5942
+ },
+ "judge:Cancellation: Tom Reyes, party of 2, Tonight 6:00 PM has been cancelled by the guest.": {
+  "judgment": {
+   "intent": "cancel",
+   "intentProbs": {
+    "question": 0,
+    "cancel": 1,
+    "existing_booking": 0,
+    "modify": 0,
+    "irrelevant": 0,
+    "new_request": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.06,
+   "urgency": 0.87,
+   "plausible": 0.73,
+   "referral": 0.09,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Tom Reyes",
+   "partySize": 2,
+   "time": "18:00",
+   "phone": null,
+   "notes": "",
+   "language": "English"
+  },
+  "ms": 4503
+ },
+ "judge:hey!! any chance you have a table for 3 tonight around 8? resy isn't loading 😭": {
+  "judgment": {
+   "intent": "new_request",
+   "intentProbs": {
+    "new_request": 0.93,
+    "existing_booking": 0.07,
+    "question": 0,
+    "modify": 0,
+    "irrelevant": 0,
+    "cancel": 0
+   },
+   "intentConfidence": 0.92,
+   "matchOf": null,
+   "matchConfidence": 0.99,
+   "manager": 0.16,
+   "urgency": 2.89,
+   "plausible": 0.38,
+   "referral": 0.08,
+   "mock": false
+  },
+  "extraction": {
+   "name": null,
+   "partySize": 3,
+   "time": "20:00",
+   "phone": null,
+   "notes": "",
+   "language": "English"
+  },
+  "ms": 1806
+ },
+ "judge:New reservation: Priya Shah, party of 2, Tonight 6:00 PM. Phone (718) 555-0161.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "cancel": 0,
+    "new_request": 0.02,
+    "irrelevant": 0,
+    "modify": 0,
+    "question": 0,
+    "existing_booking": 0.98
+   },
+   "intentConfidence": 0.98,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.06,
+   "urgency": 2.37,
+   "plausible": 0.95,
+   "referral": 0.1,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Priya Shah",
+   "partySize": 2,
+   "time": "18:00",
+   "phone": "(718) 555-0161",
+   "notes": "",
+   "language": "en"
+  },
+  "ms": 1422
+ },
+ "judge:Took a phone booking before Resy died: Chen family, 5 people, 8:30, number 917-555-0110. Didn't get to enter it.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "cancel": 0,
+    "existing_booking": 1,
+    "modify": 0,
+    "new_request": 0,
+    "question": 0,
+    "irrelevant": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.08,
+   "urgency": 2.51,
+   "plausible": 0.96,
+   "referral": 0.41,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Chen family",
+   "partySize": 5,
+   "time": "8:30",
+   "phone": "917-555-0110",
+   "notes": "Didn't get to enter it",
+   "language": "en"
+  },
+  "ms": 4237
+ },
+ "judge:This is David, we have 4 at 7:30 tonight. Can we make it 5 people? My brother is in town": {
+  "judgment": {
+   "intent": "modify",
+   "intentProbs": {
+    "cancel": 0,
+    "new_request": 0,
+    "modify": 0.99,
+    "question": 0,
+    "irrelevant": 0,
+    "existing_booking": 0.01
+   },
+   "intentConfidence": 0.99,
+   "matchOf": "B4",
+   "matchConfidence": 1,
+   "manager": 0.08,
+   "urgency": 2.54,
+   "plausible": 0.97,
+   "referral": 0.12,
+   "mock": false
+  },
+  "extraction": {
+   "name": "David",
+   "partySize": 5,
+   "time": "19:30",
+   "phone": "(646) 555-0199",
+   "notes": "My brother is in town",
+   "language": "en"
+  },
+  "ms": 1968
+ },
+ "judge:Do you take walk-ins tonight? Resy says error": {
+  "judgment": {
+   "intent": "question",
+   "intentProbs": {
+    "modify": 0,
+    "existing_booking": 0,
+    "irrelevant": 0,
+    "question": 0.72,
+    "cancel": 0,
+    "new_request": 0.28
+   },
+   "intentConfidence": 0.66,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.11,
+   "urgency": 2.87,
+   "plausible": 0.03,
+   "referral": 0.06,
+   "mock": false
+  },
+  "extraction": {
+   "name": null,
+   "partySize": null,
+   "time": null,
+   "phone": null,
+   "notes": "",
+   "language": "English"
+  },
+  "ms": 1145
+ },
+ "judge:Hello, this is James Whitfield's assistant. Mr. Whitfield has a table for 8 at 7:00 PM tonight for a client dinner. Please confirm the private corner is still arranged.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "irrelevant": 0,
+    "cancel": 0,
+    "new_request": 0,
+    "question": 0,
+    "modify": 0,
+    "existing_booking": 1
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.94,
+   "urgency": 2.61,
+   "plausible": 0.94,
+   "referral": 0.94,
+   "mock": false
+  },
+  "extraction": {
+   "name": "James Whitfield",
+   "partySize": 8,
+   "time": "19:00",
+   "phone": null,
+   "notes": "Client dinner; seating request: private corner",
+   "language": "en"
+  },
+  "ms": 1540
+ },
+ "judge:Hola, soy Marco Bellini, tengo reserva para seis a las ocho. Solo quería recordarles lo de la alergia a las nueces, es grave. Gracias.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "modify": 0.01,
+    "new_request": 0,
+    "irrelevant": 0,
+    "cancel": 0,
+    "question": 0,
+    "existing_booking": 0.99
+   },
+   "intentConfidence": 0.99,
+   "matchOf": "B6",
+   "matchConfidence": 1,
+   "manager": 0.95,
+   "urgency": 2.21,
+   "plausible": 0.97,
+   "referral": 0.02,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Marco Bellini",
+   "partySize": 6,
+   "time": "8:00 PM",
+   "phone": "(212) 555-0123",
+   "notes": "Allergy to nuts - severe",
+   "language": "Spanish"
+  },
+  "ms": 3850
+ },
+ "judge:Priya here — so sorry, need to cancel tonight 6pm, kid is sick": {
+  "judgment": {
+   "intent": "cancel",
+   "intentProbs": {
+    "new_request": 0,
+    "existing_booking": 0,
+    "modify": 0,
+    "cancel": 1,
+    "question": 0,
+    "irrelevant": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": "B14",
+   "matchConfidence": 1,
+   "manager": 0.09,
+   "urgency": 2.21,
+   "plausible": 0.96,
+   "referral": 0.06,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Priya",
+   "partySize": null,
+   "time": null,
+   "phone": "(718) 555-0161",
+   "notes": "kid is sick",
+   "language": "English"
+  },
+  "ms": 3758
+ },
+ "judge:Fall portfolio tasting next Tuesday — reserve your spot! 20% off Barolo cases.": {
+  "judgment": {
+   "intent": "irrelevant",
+   "intentProbs": {
+    "modify": 0,
+    "irrelevant": 1,
+    "existing_booking": 0,
+    "cancel": 0,
+    "new_request": 0,
+    "question": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.06,
+   "urgency": 0.07,
+   "plausible": 0.02,
+   "referral": 0.03,
+   "mock": false
+  },
+  "extraction": {
+   "name": null,
+   "partySize": null,
+   "time": null,
+   "phone": null,
+   "notes": "",
+   "language": "English"
+  },
+  "ms": 1209
+ },
+ "judge:Table for 2 at 7pm tonight possible?": {
+  "judgment": {
+   "intent": "new_request",
+   "intentProbs": {
+    "question": 0,
+    "irrelevant": 0,
+    "new_request": 0.99,
+    "existing_booking": 0.01,
+    "cancel": 0,
+    "modify": 0
+   },
+   "intentConfidence": 0.99,
+   "matchOf": null,
+   "matchConfidence": 0.62,
+   "manager": 0.06,
+   "urgency": 2.61,
+   "plausible": 0.21,
+   "referral": 0.14,
+   "mock": false
+  },
+  "extraction": {
+   "name": "nyc_dates",
+   "partySize": 2,
+   "time": "19:00",
+   "phone": null,
+   "notes": "",
+   "language": "en"
+  },
+  "ms": 600
+ },
+ "judge:Tonight: Minh Nguyen, party of 2, 7:30 PM. Regular, 14 visits, prefers the booth, phone (917) 555-0108.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "irrelevant": 0,
+    "cancel": 0,
+    "modify": 0,
+    "question": 0,
+    "new_request": 0,
+    "existing_booking": 1
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 0.99,
+   "manager": 0.2,
+   "urgency": 1.88,
+   "plausible": 0.93,
+   "referral": 0.12,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Minh Nguyen",
+   "partySize": 2,
+   "time": "7:30 PM",
+   "phone": "(917) 555-0108",
+   "notes": "Regular, 14 visits, prefers the booth",
+   "language": "en"
+  },
+  "ms": 4457
+ },
+ "judge:New reservation (Global Dining Access – Amex Platinum): Olivia Grant, party of 2, Tonight 8:30 PM. Phone (917) 555-0155.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "new_request": 0,
+    "question": 0,
+    "existing_booking": 0.99,
+    "modify": 0,
+    "irrelevant": 0.01,
+    "cancel": 0
+   },
+   "intentConfidence": 0.99,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.78,
+   "urgency": 2.04,
+   "plausible": 0.95,
+   "referral": 0.17,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Olivia Grant",
+   "partySize": 2,
+   "time": "20:30",
+   "phone": "(917) 555-0155",
+   "notes": "Global Dining Access – Amex Platinum",
+   "language": "en"
+  },
+  "ms": 2156
+ },
+ "judge:Hi, this is Minh Nguyen. I have a table for two at seven thirty tonight, I just want to make sure it's still on since Resy is down.": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "modify": 0,
+    "question": 0,
+    "existing_booking": 1,
+    "cancel": 0,
+    "new_request": 0,
+    "irrelevant": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": "B27",
+   "matchConfidence": 1,
+   "manager": 0.07,
+   "urgency": 2.79,
+   "plausible": 0.97,
+   "referral": 0.02,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Minh Nguyen",
+   "partySize": 2,
+   "time": "19:30",
+   "phone": "(917) 555-0108",
+   "notes": "",
+   "language": "English"
+  },
+  "ms": 1147
+ },
+ "campaign": {
+  "instagram_story": "🍷 Uh-oh! Our reservation system’s acting up—help us save your spot tonight! DM us your name, time & party size & we’ll comp a glass of prosecco. 🥂 #LupaTrattoria",
+  "google_post": "Our reservation system is temporarily down—we’re working on it! If you had a reservation for tonight, please DM us your name, time & party size so we can save your table. As thanks, we’ll comp a glass of prosecco! 🍷",
+  "x_post": "Quick heads-up: our reservation system is glitching. If you had a reservation for tonight, DM us your name, time & party size—we’ll hold your table & comp a prosecco! 🥂 #LupaTrattoria",
+  "website_banner": "Reservation system down? No problem! DM us your name, time & party size—we’ll save your table & comp prosecco!",
+  "door_sign": "Our reservation system’s down—help us save your spot! DM us your name, time & party size & we’ll comp a glass of prosecco. 🍷",
+  "referral_post": "Know someone with a reservation tonight? Tag them or send their name—you BOTH get a free dessert! Just DM us their name, time & party size. Sweet deal, right? 🍰"
+ },
+ "judge:Saw your story!! We have a reservation tonight under Gomez, 4 people at 7:30. Phone 917-555-0188 🥂": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "new_request": 0,
+    "existing_booking": 1,
+    "modify": 0,
+    "cancel": 0,
+    "irrelevant": 0,
+    "question": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 0.61,
+   "manager": 0.08,
+   "urgency": 2.48,
+   "plausible": 0.95,
+   "referral": 0.17,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Gomez",
+   "partySize": 4,
+   "time": "7:30",
+   "phone": "917-555-0188",
+   "notes": "instagram, @lucia.gomez",
+   "language": "english"
+  },
+  "ms": 3972
+ },
+ "judge:Hi, Raj Patel here. Booked 2 for 9:00 PM tonight, confirmation # RX-88213. Thanks for the heads up": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "modify": 0,
+    "irrelevant": 0,
+    "existing_booking": 1,
+    "new_request": 0,
+    "cancel": 0,
+    "question": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.08,
+   "urgency": 2.24,
+   "plausible": 0.97,
+   "referral": 0.04,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Raj Patel",
+   "partySize": 2,
+   "time": "21:00",
+   "phone": null,
+   "notes": "",
+   "language": "English"
+  },
+  "ms": 1830
+ },
+ "judge:yo I def had a reservation tonight lol, where's my free drink": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "existing_booking": 0.99,
+    "irrelevant": 0,
+    "cancel": 0,
+    "new_request": 0,
+    "question": 0.01,
+    "modify": 0
+   },
+   "intentConfidence": 0.99,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.29,
+   "urgency": 2.36,
+   "plausible": 0.04,
+   "referral": 0.06,
+   "mock": false
+  },
+  "extraction": {
+   "name": null,
+   "partySize": null,
+   "time": null,
+   "phone": null,
+   "notes": "",
+   "language": "English"
+  },
+  "ms": 966
+ },
+ "judge:Hernandez, party of 3, 8:30 tonight. Saw your post on IG, still on?": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "new_request": 0.09,
+    "existing_booking": 0.9,
+    "question": 0.01,
+    "modify": 0,
+    "irrelevant": 0,
+    "cancel": 0
+   },
+   "intentConfidence": 0.88,
+   "matchOf": null,
+   "matchConfidence": 0.92,
+   "manager": 0.08,
+   "urgency": 2.79,
+   "plausible": 0.9,
+   "referral": 0.18,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Hernandez",
+   "partySize": 3,
+   "time": "20:30",
+   "phone": "(347) 555-0133",
+   "notes": "Saw your post on IG, still on?",
+   "language": "en"
+  },
+  "ms": 846
+ },
+ "judge:Reservation for Ana Torres 2 ppl 6:30 tonight! Can't wait": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "existing_booking": 0.98,
+    "question": 0,
+    "cancel": 0,
+    "modify": 0,
+    "new_request": 0.02,
+    "irrelevant": 0
+   },
+   "intentConfidence": 0.98,
+   "matchOf": null,
+   "matchConfidence": 0.77,
+   "manager": 0.06,
+   "urgency": 2.31,
+   "plausible": 0.94,
+   "referral": 0.08,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Ana Torres",
+   "partySize": 2,
+   "time": "6:30 PM",
+   "phone": "@ana_eats",
+   "notes": "Channel: instagram",
+   "language": "english"
+  },
+  "ms": 4141
+ },
+ "judge:My coworker Elena Russo has a table for 4 at 8pm tonight, she's not on IG. Her number is 646-555-0172 🍰": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "existing_booking": 1,
+    "question": 0,
+    "cancel": 0,
+    "modify": 0,
+    "new_request": 0,
+    "irrelevant": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 0.98,
+   "manager": 0.09,
+   "urgency": 2.2,
+   "plausible": 0.93,
+   "referral": 0.99,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Elena Russo",
+   "partySize": 4,
+   "time": "20:00",
+   "phone": "(646) 555-0172",
+   "notes": "🍰",
+   "language": "en"
+  },
+  "ms": 1962
+ },
+ "judge:@LupaTrattoria my sister Kate Doyle booked 2 at 9:30 tonight for her birthday!!": {
+  "judgment": {
+   "intent": "existing_booking",
+   "intentProbs": {
+    "existing_booking": 1,
+    "irrelevant": 0,
+    "question": 0,
+    "new_request": 0,
+    "cancel": 0,
+    "modify": 0
+   },
+   "intentConfidence": 1,
+   "matchOf": null,
+   "matchConfidence": 1,
+   "manager": 0.78,
+   "urgency": 2.38,
+   "plausible": 0.94,
+   "referral": 0.99,
+   "mock": false
+  },
+  "extraction": {
+   "name": "Kate Doyle",
+   "partySize": 2,
+   "time": "21:30",
+   "phone": null,
+   "notes": "birthday",
+   "language": "English"
+  },
+  "ms": 1396
+ },
+ "payments": {
+  "charges": [
+   {
+    "id": "ch_1",
+    "amount": 190,
+    "created": "Mon 4:12 PM",
+    "cardholder": "S KIM",
+    "brand": "Visa",
+    "last4": "4242",
+    "email": "sarah.kim@gmail.com",
+    "description": "Resy prepaid reservation · Lupa Trattoria"
+   },
+   {
+    "id": "ch_2",
+    "amount": 570,
+    "created": "Tue 11:02 AM",
+    "cardholder": "MARCO BELLINI",
+    "brand": "Amex",
+    "last4": "1005",
+    "email": null,
+    "description": "Resy prepaid reservation · Lupa Trattoria"
+   },
+   {
+    "id": "ch_3",
+    "amount": 285,
+    "created": "Tue 6:40 PM",
+    "cardholder": "R OKONKWO",
+    "brand": "Mastercard",
+    "last4": "8831",
+    "email": "ruth.okonkwo@outlook.com",
+    "description": "Resy prepaid reservation #R-55102 · Lupa Trattoria"
+   },
+   {
+    "id": "ch_4",
+    "amount": 28.5,
+    "created": "Today 12:15 PM",
+    "cardholder": "J LIU",
+    "brand": "Visa",
+    "last4": "7719",
+    "email": null,
+    "description": "Lunch · table 4 · Lupa Trattoria POS"
+   },
+   {
+    "id": "ch_5",
+    "amount": 100,
+    "created": "Today 1:03 PM",
+    "cardholder": "D PARK",
+    "brand": "Visa",
+    "last4": "3390",
+    "email": "dpark@gmail.com",
+    "description": "Digital gift card · Lupa Trattoria"
+   }
+  ],
+  "results": [
+   {
+    "chargeId": "ch_1",
+    "isReservation": 0.98,
+    "matchOf": "B1",
+    "matchProb": 1,
+    "mock": false
+   },
+   {
+    "chargeId": "ch_2",
+    "isReservation": 0.97,
+    "matchOf": "B6",
+    "matchProb": 0.99,
+    "mock": false
+   },
+   {
+    "chargeId": "ch_3",
+    "isReservation": 0.97,
+    "matchOf": null,
+    "matchProb": 0,
+    "mock": false
+   },
+   {
+    "chargeId": "ch_4",
+    "isReservation": 0.03,
+    "matchOf": null,
+    "matchProb": 0,
+    "mock": false
+   },
+   {
+    "chargeId": "ch_5",
+    "isReservation": 0.09,
+    "matchOf": null,
+    "matchProb": 0,
+    "mock": false
+   }
+  ]
+ }
+}

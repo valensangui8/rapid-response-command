@@ -214,7 +214,7 @@ export default function ResyDashboard() {
 
         {/* Jev + floor */}
         <section className="flex min-h-0 flex-col gap-3 overflow-y-auto">
-          <div className="flex gap-4 rounded-lg border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-3">
+          <div id="jev-panel" className="flex gap-4 rounded-lg border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-3">
             <div className="flex w-32 shrink-0 flex-col items-center">
               <PixelJev mood={mood} thinking={thinking} />
               <div className="text-center text-[11px] text-slate-400">{thinking ? "Reading…" : current ? "Decided" : "Waiting"}</div>
@@ -254,7 +254,7 @@ export default function ResyDashboard() {
           <VoiceAgent ingest={ingest} treat={treat} />
 
           {campaign && (
-            <div className="rounded-lg border border-fuchsia-800 bg-fuchsia-950/30 p-3 text-xs">
+            <div id="campaign" className="rounded-lg border border-fuchsia-800 bg-fuchsia-950/30 p-3 text-xs">
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">📣 Recovery campaign · turn the outage into a reason to reach out</h2>
                 <span className="text-fuchsia-300">Reward: {restaurant.perk} · Jev filters freeloaders</span>
@@ -281,7 +281,7 @@ export default function ResyDashboard() {
           )}
 
           {/* Floor timeline */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+          <div id="floor" className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
             <div className="mb-2 flex items-center justify-between text-sm">
               <h2 className="font-semibold">Tonight’s floor (rebuilt)</h2>
               <div className="flex gap-2 text-[10px]">
@@ -329,7 +329,7 @@ export default function ResyDashboard() {
         </section>
 
         {/* Actions */}
-        <section className="flex min-h-0 flex-col rounded-lg border border-slate-800 bg-slate-900/50">
+        <section id="outreach" className="flex min-h-0 flex-col rounded-lg border border-slate-800 bg-slate-900/50">
           <h2 className="border-b border-slate-800 px-3 py-2 text-sm font-semibold">Outreach queue · AI drafts, host approves</h2>
           <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
             {queue.map((a) => (
@@ -482,7 +482,7 @@ function ResyBackPanel({ book, feed }: { book: Booking[]; feed: Judged[] }) {
   const changed = live.filter((b) => fromResy(b) && b.sources.length > 1);
   const cancelled = book.filter((b) => b.status === "cancelled" && fromResy(b));
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
+    <div id="resy-back" className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">🔄 When Resy comes back: sync before it double-books</h2>
         <button onClick={() => setOpen(!open)} disabled={!book.length} className="rounded bg-emerald-700 px-2 py-1 font-semibold disabled:opacity-40">
@@ -564,7 +564,7 @@ function PaymentsPanel({ book, onApply }: { book: Booking[]; onApply: (b: Bookin
   }
 
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
+    <div id="payments" className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold">💳 Payment validation · money is the strongest proof</h2>
         <button onClick={match} disabled={busy || !book.length} className="rounded bg-indigo-600 px-2 py-1 font-semibold disabled:opacity-40">

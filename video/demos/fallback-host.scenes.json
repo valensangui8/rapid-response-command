@@ -1,0 +1,60 @@
+[
+  {
+    "scene": "problem",
+    "text": "It's two in the afternoon. Dinner starts at five, and Resy just went down. The restaurant can't see who's coming tonight. But those bookings aren't gone. They're scattered across email, texts, voicemail, DMs and the point of sale. Meet Fallback Host.",
+    "overlay": {
+      "type": "headline-card",
+      "title": "Resy is down. Tonight's book is gone.",
+      "body": "Fallback Host rebuilds it in about a minute",
+      "placement": "bottom-center",
+      "motion": "fade-in"
+    }
+  },
+  {
+    "scene": "scan",
+    "text": "One click, and Jev, TypeSafe's decision model, reads every message. For each one it decides: is this an existing booking, a new request, a change, or a cancellation? Does it match someone already in the book? Does the manager need to see it?"
+  },
+  {
+    "scene": "jev",
+    "text": "Every answer comes with a calibrated probability. Here, Jev is ninety nine percent sure this is an existing booking, and flags an Amex Platinum guest for the manager."
+  },
+  {
+    "scene": "floor",
+    "text": "Code turns those judgments into tonight's floor. Tables are assigned, duplicates merge across channels and languages, a severe nut allergy is flagged, and a conflict is caught hours early. David wants five seats, there's no table, so he gets alternatives now, not at seven P M."
+  },
+  {
+    "scene": "voice",
+    "text": "Guests who call reach a voice agent. Minh asks about his booking. Jev finds him in the rebuilt book, confirms it, and offers a free dessert for the trouble."
+  },
+  {
+    "scene": "campaign",
+    "text": "Then we turn the outage into outreach. One click posts to Instagram, Google, X, the website and the door. Had a table tonight? Message us for a free glass of prosecco. Guests reply, friends refer friends, and Jev catches the freeloader with no real details.",
+    "overlay": {
+      "type": "lower-third",
+      "text": "Recovery campaign + referrals, freeloaders filtered",
+      "placement": "bottom-left",
+      "motion": "fade-in"
+    }
+  },
+  {
+    "scene": "payments",
+    "text": "Prepayments are the strongest proof. Jev matches Stripe charges to bookings, ignores a lunch bill and a gift card, and recovers a party of three that existed nowhere else. At the door, the last four digits confirm a guest instantly.",
+    "overlay": {
+      "type": "lower-third",
+      "text": "Payment validation + door check",
+      "placement": "bottom-left",
+      "motion": "fade-in"
+    }
+  },
+  {
+    "scene": "close",
+    "text": "When Resy comes back, Fallback Host lists exactly what to enter first, so nothing gets double booked. And from now on, the book is backed up outside Resy. A lost afternoon becomes a one minute recovery, with happier guests. The AI proposes. The host decides.",
+    "overlay": {
+      "type": "headline-card",
+      "title": "Fallback Host",
+      "body": "Rebuild. Confirm. Recover. Never again.",
+      "placement": "top-right",
+      "motion": "fade-in"
+    }
+  }
+]

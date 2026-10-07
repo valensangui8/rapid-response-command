@@ -40,3 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !.env.example
+
+# video tooling
+/video/node_modules
+/video/.argo
+/video/test-results
+/video/videos
