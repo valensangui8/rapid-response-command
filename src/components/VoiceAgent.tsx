@@ -32,7 +32,7 @@ function speak(text: string, caller = false) {
 export default function VoiceAgent({ ingest, treat }: { ingest: Ingest; treat: (id: string) => void }) {
   const [log, setLog] = useState<Line[]>([]);
   const [state, setState] = useState<"idle" | "ringing" | "talking" | "listening" | "thinking">("idle");
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(() => typeof window !== "undefined" && window.location.search.includes("demo=replay"));
   const recRef = useRef<any>(null);
 
   const say = async (text: string) => {

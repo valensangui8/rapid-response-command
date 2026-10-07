@@ -14,7 +14,8 @@ export function PixelJev({ mood, thinking, size = 112 }: { mood: Mood; thinking:
   }, [thinking]);
 
   const cells: [number, number, string][] = []; // x, y, color
-  const px = (x: number, y: number, c = "#000") => cells.push([x, y, c]);
+  const ink = { calm: "#38bdf8", concerned: "#f59e0b", alarm: "#ef4444", skeptical: "#a78bfa" }[mood];
+  const px = (x: number, y: number, c = ink) => cells.push([x, y, c]);
   // antenna (tip blinks while thinking)
   px(7, 2); px(8, 2); px(7, 1); px(8, 1);
   if (!thinking || frame % 2) { px(6, 0); px(7, 0); px(8, 0); px(9, 0); }
