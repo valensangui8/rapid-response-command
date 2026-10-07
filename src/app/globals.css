@@ -24,3 +24,21 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Jev animations */
+@keyframes jev-scan { 0%,100% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+.jev-scan { animation: jev-scan 0.6s ease-in-out infinite; }
+@keyframes jev-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.jev-bob { animation: jev-bob 2.4s ease-in-out infinite; }
+@keyframes jev-shake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(3deg); } }
+.jev-shake { animation: jev-shake 0.5s ease-in-out 2; transform-origin: 50% 80%; }
+@keyframes jev-blink-fast { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+.jev-blink-fast { animation: jev-blink-fast 0.4s infinite; }
+@keyframes jev-eyeblink { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+.jev-eyeblink { animation: jev-eyeblink 3.5s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes jev-dot { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+.jev-dot { animation: jev-dot 0.9s infinite; }
+@keyframes jev-pop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+.jev-pop { animation: jev-pop 0.35s ease-out; }
+@keyframes jev-stamp { 0% { transform: scale(1.8) rotate(-8deg); opacity: 0; } 60% { transform: scale(0.95) rotate(-3deg); opacity: 1; } 100% { transform: scale(1) rotate(-3deg); } }
+.jev-stamp { animation: jev-stamp 0.45s cubic-bezier(.2,1.4,.4,1); }

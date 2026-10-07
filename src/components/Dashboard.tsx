@@ -1,10 +1,11 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { addToIncidents, assignResources, resetCounter, WEIGHTS } from "@/lib/incidents";
 import { scenario } from "@/lib/scenario";
 import type { Incident, RawReport, TriagedReport } from "@/lib/types";
 import { priorityColor } from "@/lib/ui";
+import JevStage, { type StageItem } from "./JevStage";
 
 const IncidentMap = dynamic(() => import("./IncidentMap"), { ssr: false });
 const LANGS = ["English", "Spanish", "Mandarin Chinese", "Russian", "Bengali", "Haitian Creole"];
@@ -25,6 +26,13 @@ export default function Dashboard() {
   const [sitrep, setSitrep] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const stopRef = useRef(false);
+  const [stageQueue, setStageQueue] = useState<StageItem[]>([]);
+  const consumeStage = useCallback(() => setStageQueue((q) => q.slice(1)), []);
+
+  const toStage = (t: TriagedReport): StageItem => {
+    const inc = incRef.current.find((i) => i.reports.some((r) => r.report.id === t.report.id));
+    return { key: `${t.report.id}-${Date.now()}`, triaged: t, incidentId: inc?.id ?? null, priority: inc?.priority ?? null, resource: inc?.assignedResource ?? null };
+  };
 
   useEffect(() => {
     fetch("/api/status").then((r) => r.json()).then(setStatus);
@@ -44,6 +52,7 @@ export default function Dashboard() {
       const data = (await res.json()) as TriagedReport & { ms: number };
       setFeed((f) => f.map((x) => (x.report.id === report.id ? { ...x, triaged: data, ms: data.ms } : x)));
       commit(addToIncidents(incRef.current, data));
+      setStageQueue((q) => [...q, toStage(data)]);
     } catch (e) {
       setFeed((f) => f.map((x) => (x.report.id === report.id ? { ...x, error: String(e).slice(0, 120) } : x)));
     }
@@ -76,6 +85,7 @@ export default function Dashboard() {
     setAlerts([]);
     setSitrep("");
     setSelected(null);
+    setStageQueue([]);
   }
 
   const setStatusOf = (id: string, s: Incident["status"]) =>
@@ -138,7 +148,12 @@ export default function Dashboard() {
           </form>
           <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
             {feed.map(({ report, triaged, error }) => (
-              <li key={report.id} className="rounded border border-slate-800 bg-slate-900 p-2 text-xs">
+              <li
+                key={report.id}
+                onClick={() => triaged && setStageQueue((q) => [toStage(triaged), ...q])}
+                title={triaged ? "Ver a Jev decidir este reporte" : undefined}
+                className={`rounded border border-slate-800 bg-slate-900 p-2 text-xs ${triaged ? "cursor-pointer hover:border-sky-700" : ""}`}
+              >
                 <div className="mb-1 flex justify-between text-slate-400">
                   <span className="uppercase">{report.source}</span>
                   <span>{triaged ? (triaged.judgment.duplicateOf ? `↳ merged into ${triaged.judgment.duplicateOf}` : triaged.judgment.category) : error ? "error" : "triaging…"}</span>
@@ -160,8 +175,9 @@ export default function Dashboard() {
         </section>
 
         {/* Map + sitrep */}
-        <section className="flex min-h-[400px] flex-col gap-3">
-          <div className="relative min-h-[300px] flex-1">
+        <section className="flex min-h-[400px] flex-col gap-3 overflow-y-auto">
+          <JevStage queue={stageQueue} onConsumed={consumeStage} live={!!status?.jev} />
+          <div className="relative min-h-[260px] flex-1">
             <IncidentMap incidents={incidents} resources={scenario.resources} selected={selected} onSelect={setSelected} />
           </div>
           {sel && (
