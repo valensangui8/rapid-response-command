@@ -1,4 +1,4 @@
-# ▶️ [Watch the demo video on YouTube](https://youtu.be/Erd6mEMeFRY)
+# ▶️ [Watch the demo video on YouTube](https://youtu.be/o2pXZP6sjd8)
 ## 🎞️ [Watch in full HD on Google Drive](https://drive.google.com/file/d/1jEPVw60gdAT_HdrJHPb3Cy5sMIn2LyE4/view)
 
 # Fallback Host: when Resy goes down, Jev rebuilds tonight's book
