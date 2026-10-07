@@ -173,7 +173,7 @@ function fuse(items: { x: Judged; w: number }[]): EdgeState {
   const sorted = [...items].sort((p, q) => q.x.r.minutesAgo - p.x.r.minutesAgo);
   let block = 0, crowd = 0, why: string[] = [], reports: string[] = [];
   for (const { x, w } of sorted) {
-    if (w === 0) continue;
+    if (w < 0.1) continue; // rumors (credibility < ~20%) never touch the map
     const k = x.j.kind;
     if (k === "reopened" && w >= CONFIRM_AT) {
       block = 0; crowd = 0; why = [`reopened per ${x.r.author} (${x.r.minutesAgo}m ago)`]; reports = [x.r.id];
