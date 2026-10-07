@@ -18,7 +18,7 @@ export const restaurant = {
   ],
 };
 
-export type Channel = "email" | "sms" | "voicemail" | "instagram" | "staff" | "google" | "manual" | "x";
+export type Channel = "email" | "sms" | "voicemail" | "instagram" | "staff" | "google" | "manual" | "x" | "pos";
 export type Message = { id: string; channel: Channel; from: string; received: string; text: string };
 
 export type Booking = {
@@ -54,6 +54,8 @@ export const messages: Message[] = [
   { id: "m14", channel: "sms", from: "(718) 555-0161", received: "2:01 PM", text: "Priya here — so sorry, need to cancel tonight 6pm, kid is sick" },
   { id: "m15", channel: "email", from: "deals@wine-distributor.com", received: "2:02 PM", text: "Fall portfolio tasting next Tuesday — reserve your spot! 20% off Barolo cases." },
   { id: "m16", channel: "instagram", from: "@nyc_dates", received: "2:04 PM", text: "Table for 2 at 7pm tonight possible?" },
+  { id: "m17", channel: "pos", from: "Toast POS · Resy guestbook (digital chits cached 11:00 AM)", received: "11:00 AM", text: "Tonight: Minh Nguyen, party of 2, 7:30 PM. Regular, 14 visits, prefers the booth, phone (917) 555-0108." },
+  { id: "m18", channel: "email", from: "notifications@resy.com", received: "Mon 10:20 AM", text: "New reservation (Global Dining Access – Amex Platinum): Olivia Grant, party of 2, Tonight 8:30 PM. Phone (917) 555-0155." },
 ];
 
 /** Replies that arrive after we post the recovery campaign ("had a booking tonight? DM us → free prosecco"). */

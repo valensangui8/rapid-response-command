@@ -14,7 +14,7 @@ const INTENT_LABEL: Record<string, string> = {
   question: "question",
   irrelevant: "ignore",
 };
-const CH_ICON: Record<string, string> = { email: "✉️", sms: "💬", voicemail: "📞", instagram: "📷", staff: "🧑‍🍳", google: "🔎", manual: "✍️", x: "𝕏" };
+const CH_ICON: Record<string, string> = { email: "✉️", sms: "💬", voicemail: "📞", instagram: "📷", staff: "🧑‍🍳", google: "🔎", manual: "✍️", x: "𝕏", pos: "🧾" };
 const STATUS_COLOR: Record<Booking["status"], string> = {
   verified: "bg-emerald-600 border-emerald-400",
   unverified: "bg-amber-600 border-amber-400",
@@ -307,6 +307,7 @@ export default function ResyDashboard() {
             </div>
           </div>
           <BackupPanel book={book} />
+          <ResyBackPanel book={book} feed={feed} />
         </section>
 
         {/* Actions */}
@@ -450,6 +451,45 @@ function BackupPanel({ book }: { book: Booking[] }) {
         ))}
       </div>
       <p className="mt-2 text-slate-500">{snapshots} snapshots today · next outage, the book is one click away instead of buried in inboxes.</p>
+    </div>
+  );
+}
+
+/** When Resy comes back: push offline bookings in BEFORE it starts selling those tables online again. */
+function ResyBackPanel({ book, feed }: { book: Booking[]; feed: Judged[] }) {
+  const [open, setOpen] = useState(false);
+  const fromResy = (b: Booking) => b.sources.some((id) => feed.find((f) => f.m.id === id)?.m.from.includes("resy.com"));
+  const live = book.filter((b) => b.status !== "cancelled" && b.status !== "waitlist");
+  const toEnter = live.filter((b) => !fromResy(b));
+  const changed = live.filter((b) => fromResy(b) && b.sources.length > 1);
+  const cancelled = book.filter((b) => b.status === "cancelled" && fromResy(b));
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 text-xs">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">🔄 When Resy comes back: sync before it double-books</h2>
+        <button onClick={() => setOpen(!open)} disabled={!book.length} className="rounded bg-emerald-700 px-2 py-1 font-semibold disabled:opacity-40">
+          {open ? "Hide plan" : "✅ Resy is back online"}
+        </button>
+      </div>
+      {open && (
+        <div className="mt-2 grid grid-cols-1 gap-2 xl:grid-cols-3">
+          <div className="rounded bg-slate-900 p-2">
+            <div className="font-semibold text-amber-300">1 · Block first ({toEnter.length})</div>
+            <div className="text-slate-400">Taken offline, Resy doesn’t know them → enter before online booking reopens</div>
+            {toEnter.map((b) => <div key={b.id}>• {b.name} · {b.partySize} @ {fmt(b.time)} {b.table ?? ""}</div>)}
+          </div>
+          <div className="rounded bg-slate-900 p-2">
+            <div className="font-semibold text-sky-300">2 · Update ({changed.length})</div>
+            <div className="text-slate-400">Existed in Resy but guests sent new info (size, notes, allergies)</div>
+            {changed.map((b) => <div key={b.id}>• {b.name} · {b.partySize} @ {fmt(b.time)}{b.notes ? ` · ${b.notes.slice(0, 40)}` : ""}</div>)}
+          </div>
+          <div className="rounded bg-slate-900 p-2">
+            <div className="font-semibold text-slate-300">3 · Cancel in Resy ({cancelled.length})</div>
+            <div className="text-slate-400">So no-show fees / Notify alerts fire correctly</div>
+            {cancelled.map((b) => <div key={b.id}>• {b.name} · {fmt(b.time)}</div>)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
