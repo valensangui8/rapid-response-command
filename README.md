@@ -1,23 +1,10 @@
+# ▶️ [Watch the demo video on YouTube](https://youtu.be/Erd6mEMeFRY)
+
 # Fallback Host: when Resy goes down, Jev rebuilds tonight's book
 
 > When Resy goes down, Fallback Host rebuilds tonight's reservations from emails, texts, voicemails, DMs and payments. Jev verifies each one; a voice agent and AI drafts confirm guests.
 
 Built in 45 minutes at the **Plug and Play × PMAI Hackathon: Rapid Response (#AIWeekNY)**, Challenge 1: *"Resy goes offline. How can you reach customers, verify availability and confirm bookings for tonight?"*
-
-## Challenge 2: Clear Path Home (Knicks win chaos)
-*"The Knicks win the championship and Midtown floods with fans. Can official alerts, social media and public reports map street closures and plan alternate routes home?"*
-
-- 🎬 **Demo video (1:53):** [demo-video/knicks.mp4](https://github.com/valensangui8/rapid-response-command/blob/main/demo-video/knicks.mp4) · subtitles: [`.srt`](demo-video/knicks.srt) · [`.vtt`](demo-video/knicks.vtt) · [narration script](demo-video/knicks-script.md)
-- 📱 **Live app (mobile-first):** https://rapid-response-command.vercel.app/knicks · operator console: https://rapid-response-command.vercel.app/knicks/ops
-
-How it works:
-1. **Collect.** On open, the app pulls NYPD / Notify NYC alerts, MTA status, DOT traffic sensors, social posts and 311 reports. The map fills in from your location: street congestion by color, station load in %.
-2. **Verify (Jev).** Jev classifies each report (road closed, crowd, station closed or metered, reopened, hazard, rumor) and scores its credibility. Code fuses the evidence: an official source counts in full, a public report counts by credibility, two credible reports confirm a closure, and an official "reopened" clears earlier reports. A single unverified report only slows routes down until a human confirms it.
-3. **Route.** Choose a destination and a mode (🚗 drive, 🚇 transit, 🚶 walk). You get 3 options per mode with ETAs. Drive shows congested blocks, transit adds walk + wait (from station load) + ride. The recommendation prefers time, but penalizes crowds above 70%.
-4. **Spread the crowd.** Every user who follows a recommendation adds load to that station or road, so the next riders get shifted elsewhere instead of herded into one crush. If your option is packed, it suggests a nearby place to wait it out.
-5. **Navigate.** Waze-style turn-by-turn directions with a live ETA.
-
-Mocked for the demo: traffic, station load, the crowd simulation and Midtown grid routing (14th–59th St, 10th–1st Ave). Jev's judgments are live.
 
 ## In 60 seconds: what the app does, step by step
 It's 2 PM, Resy is down, and dinner starts at 5. Fallback Host walks the restaurant from *"we don't know who's coming"* to *"every table confirmed"*:
@@ -35,7 +22,6 @@ It's 2 PM, Resy is down, and dinner starts at 5. Fallback Host walks the restaur
 
 **Result:** a lost afternoon becomes a one-minute recovery. Guests end up happier than if nothing had happened, and the AI never acts without the host's approval.
 
-- ▶️ **Watch the demo on YouTube:** https://youtu.be/Erd6mEMeFRY
 - 🎬 **Demo video file (2 min):** [demo-video/fallback-host.mp4](https://github.com/valensangui8/rapid-response-command/blob/main/demo-video/fallback-host.mp4) · subtitles: [`.srt`](demo-video/fallback-host.srt) · [`.vtt`](demo-video/fallback-host.vtt) · [narration script](demo-video/script.md)
 - 🌐 **Live app:** https://rapid-response-command.vercel.app/resy
 - ▶️ **Reproducible demo run:** https://rapid-response-command.vercel.app/resy?demo=replay
@@ -85,6 +71,21 @@ npx argo pipeline fallback-host     # → video/videos/fallback-host.mp4 (+ .srt
 
 ## Simulated in the demo
 The demo messages, Stripe charges and Toast POS records are sample data. Posting to social channels, sending SMS, emailing backups and Resy sync are shown in the UI, not executed. The Jev judgments, LLM extractions and drafts in the video are real model outputs, recorded once and replayed.
+
+## Challenge 2: Clear Path Home (Knicks win chaos)
+*"The Knicks win the championship and Midtown floods with fans. Can official alerts, social media and public reports map street closures and plan alternate routes home?"*
+
+- 🎬 **Demo video (1:53):** [demo-video/knicks.mp4](https://github.com/valensangui8/rapid-response-command/blob/main/demo-video/knicks.mp4) · subtitles: [`.srt`](demo-video/knicks.srt) · [`.vtt`](demo-video/knicks.vtt) · [narration script](demo-video/knicks-script.md)
+- 📱 **Live app (mobile-first):** https://rapid-response-command.vercel.app/knicks · operator console: https://rapid-response-command.vercel.app/knicks/ops
+
+How it works:
+1. **Collect.** On open, the app pulls NYPD / Notify NYC alerts, MTA status, DOT traffic sensors, social posts and 311 reports. The map fills in from your location: street congestion by color, station load in %.
+2. **Verify (Jev).** Jev classifies each report (road closed, crowd, station closed or metered, reopened, hazard, rumor) and scores its credibility. Code fuses the evidence: an official source counts in full, a public report counts by credibility, two credible reports confirm a closure, and an official "reopened" clears earlier reports. A single unverified report only slows routes down until a human confirms it.
+3. **Route.** Choose a destination and a mode (🚗 drive, 🚇 transit, 🚶 walk). You get 3 options per mode with ETAs. Drive shows congested blocks, transit adds walk + wait (from station load) + ride. The recommendation prefers time, but penalizes crowds above 70%.
+4. **Spread the crowd.** Every user who follows a recommendation adds load to that station or road, so the next riders get shifted elsewhere instead of herded into one crush. If your option is packed, it suggests a nearby place to wait it out.
+5. **Navigate.** Waze-style turn-by-turn directions with a live ETA.
+
+Mocked for the demo: traffic, station load, the crowd simulation and Midtown grid routing (14th–59th St, 10th–1st Ave). Jev's judgments are live.
 
 ---
 Other prototype in this repo: an emergency-triage command center at `/` (same Jev + LLM pattern).
