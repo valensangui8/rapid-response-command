@@ -14,6 +14,7 @@ const MODES: { id: Mode; icon: string; label: string }[] = [
 const KIND: Record<string, string> = { road_closed: "🚧 Closed", crowd: "👥 Crowd", station_closed: "⛔ Station closed", station_crowded: "⏳ Station packed", reopened: "✅ Reopened", hazard: "🔥 Hazard", info: "💬 Rumor/info" };
 const MSG = { lat: coord(2, 31)[0], lng: coord(2, 31)[1] };
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${Math.round(m % 60)}` : `${Math.round(m)}`);
+const BOOT_MS = 8500;
 const k = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`);
 
 function snap(p: LatLng) {
@@ -51,6 +52,18 @@ export default function KnicksApp() {
   const [sheet, setSheet] = useState<"routes" | "alerts">("routes");
   const [toast, setToast] = useState<string | null>(null);
   const prevRec = useRef<Record<string, string>>({});
+  // Opening sequence: sources come online one by one while the map fills in from your location
+  const [boot, setBoot] = useState(0);
+  useEffect(() => {
+    const t0 = performance.now();
+    const id = setInterval(() => {
+      const p = Math.min(1, (performance.now() - t0) / BOOT_MS);
+      setBoot((b) => (b >= 1 ? 1 : p));
+      if (p >= 1) clearInterval(id);
+    }, 150);
+    return () => clearInterval(id);
+  }, []);
+  const booting = boot < 1;
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     setNow(Date.now());
@@ -134,9 +147,13 @@ export default function KnicksApp() {
     <div className="flex h-dvh w-full items-center justify-center bg-slate-200">
       <div className="relative h-full w-full overflow-hidden bg-white text-slate-900 md:h-[860px] md:max-h-full md:w-[420px] md:rounded-[36px] md:border-[10px] md:border-slate-900 md:shadow-2xl">
         <div className="absolute inset-0">
-          <WazeMap me={me} mode={nav?.mode ?? mode} opts={nav ? [nav] : opts} selected={sel?.key ?? null} onSelect={setSelected} state={state} sim={sim} follow={!!nav} onPick={(p) => { setPicked(p); setNav(null); }} progress={progress} />
+          <WazeMap me={me} mode={nav?.mode ?? mode} opts={booting ? [] : nav ? [nav] : opts} reveal={boot} selected={sel?.key ?? null} onSelect={setSelected} state={state} sim={sim} follow={!!nav} onPick={(p) => { setPicked(p); setNav(null); }} progress={progress} />
         </div>
 
+        {booting ? (
+          <BootOverlay boot={boot} judged={judged} onSkip={() => setBoot(1)} />
+        ) : (
+        <>
         {/* ── Top ── */}
         {nav ? (
           <div className="absolute inset-x-2 top-2 z-[1000] rounded-2xl bg-[#1d6f42] p-3 text-white shadow-xl">
@@ -240,6 +257,8 @@ export default function KnicksApp() {
             </>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );
@@ -272,5 +291,63 @@ function Alerts({ judged, state, reviews, setReviews }: { judged: Judged[]; stat
         </div>
       ))}
     </div>
+  );
+}
+
+const SOURCES = [
+  { at: 0.0, icon: "🏛️", name: "NYPD · Notify NYC alerts", unit: "alerts", n: 14 },
+  { at: 0.14, icon: "🚇", name: "MTA service status · turnstiles", unit: "stations", n: 46 },
+  { at: 0.32, icon: "🚦", name: "DOT traffic speed sensors", unit: "road segments", n: 1043 },
+  { at: 0.55, icon: "📱", name: "Social posts (X, Instagram, Reddit)", unit: "posts", n: 2318 },
+  { at: 0.72, icon: "☎️", name: "311 reports", unit: "reports", n: 87 },
+  { at: 0.84, icon: "🧠", name: "Jev: verifying + fusing signals", unit: "verdicts", n: 0 },
+];
+
+function BootOverlay({ boot, judged, onSkip }: { boot: number; judged: Judged[]; onSkip: () => void }) {
+  const last = judged.slice(-3).reverse();
+  return (
+    <>
+      <div className="absolute inset-x-2 top-2 z-[1000] rounded-2xl bg-slate-900/95 p-3 text-white shadow-xl">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 animate-ping rounded-full bg-cyan-400" />
+          <div className="flex-1 text-sm font-bold">Scanning Midtown after the Knicks win…</div>
+          <span className="font-mono text-sm text-cyan-300">{Math.round(boot * 100)}%</span>
+        </div>
+        <div className="mt-2 h-1 overflow-hidden rounded bg-slate-700">
+          <div className="h-full bg-cyan-400 transition-all" style={{ width: `${boot * 100}%` }} />
+        </div>
+      </div>
+      <div className="absolute inset-x-0 bottom-0 z-[1000] rounded-t-3xl bg-white px-3 pb-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.15)]">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-sm font-extrabold">Collecting live signals</div>
+          <button onClick={onSkip} className="text-xs font-semibold text-blue-600">Skip</button>
+        </div>
+        <div className="space-y-1.5">
+          {SOURCES.map((s, i) => {
+            const next = SOURCES[i + 1]?.at ?? 1;
+            const p = Math.max(0, Math.min(1, (boot - s.at) / (next - s.at)));
+            const done = p >= 1, started = boot >= s.at;
+            const count = s.n ? Math.round(s.n * p) : judged.length;
+            return (
+              <div key={s.name} className={`flex items-center gap-2 text-xs transition-opacity ${started ? "opacity-100" : "opacity-30"}`}>
+                <span className="w-5 text-center">{s.icon}</span>
+                <span className="flex-1 truncate">{s.name}</span>
+                <span className="font-mono text-[11px] text-slate-500">{started ? `${count.toLocaleString()} ${s.unit}` : ""}</span>
+                <span className="w-4 text-center">{done ? "✅" : started ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" /> : "·"}</span>
+              </div>
+            );
+          })}
+        </div>
+        {last.length > 0 && (
+          <div className="mt-3 space-y-1 border-t pt-2">
+            {last.map((x) => (
+              <div key={x.r.id} className="truncate text-[11px] text-slate-600">
+                <b>{KIND[x.j.kind]}</b> · {Math.round(x.j.credible * 100)}% credible · {x.r.text}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
