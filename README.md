@@ -4,7 +4,8 @@
 
 Built in 45 minutes at the **Plug and Play × PMAI Hackathon: Rapid Response (#AIWeekNY)**, Challenge 1: *"Resy goes offline. How can you reach customers, verify availability and confirm bookings for tonight?"*
 
-- 🎬 **Demo video (2 min):** [demo-video/fallback-host.mp4](https://github.com/valensangui8/rapid-response-command/blob/main/demo-video/fallback-host.mp4) · subtitles: [`.srt`](demo-video/fallback-host.srt) · [`.vtt`](demo-video/fallback-host.vtt) · [narration script](demo-video/script.md)
+- ▶️ **Watch the demo on YouTube:** https://youtu.be/Erd6mEMeFRY
+- 🎬 **Demo video file (2 min):** [demo-video/fallback-host.mp4](https://github.com/valensangui8/rapid-response-command/blob/main/demo-video/fallback-host.mp4) · subtitles: [`.srt`](demo-video/fallback-host.srt) · [`.vtt`](demo-video/fallback-host.vtt) · [narration script](demo-video/script.md)
 - 🌐 **Live app:** https://rapid-response-command.vercel.app/resy
 - ▶️ **Reproducible demo run:** https://rapid-response-command.vercel.app/resy?demo=replay
 
