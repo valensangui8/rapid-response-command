@@ -2,92 +2,83 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
-import { coord, EDGES, POIS, STATIONS, STATUS_COLOR, type buildState, type Judged, type LatLng } from "@/lib/knicks";
-import type { RouteOut } from "@/app/api/knicks/routes/route";
+import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { coord, EDGES, POIS, STATIONS, type buildState, type LatLng } from "@/lib/knicks";
+import { carCong, stationLoad, walkCrowd, type Mode, type Option, type Sim } from "@/lib/knicksSim";
 
-const ROUTE_COLOR: Record<string, string> = { fast: "#1a73e8", calm: "#16a34a", stop: "#9333ea" };
-const icon = (html: string, size = 28) => L.divIcon({ html, className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
-const youIcon = icon(`<div style="width:22px;height:22px;border-radius:50%;background:#1a73e8;border:4px solid #fff;box-shadow:0 0 0 8px rgba(26,115,232,.25),0 2px 6px rgba(0,0,0,.4)"></div>`, 22);
-const pin = (e: string, bg: string) => icon(`<div style="font-size:16px;width:30px;height:30px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)">${e}</div>`, 30);
-const HAZ: Record<string, string> = { hazard: "🔥", crowd: "👥", road_closed: "🚧" };
+const LEVEL = ["#22c55e", "#facc15", "#f97316", "#dc2626"];
+const BASE: Record<Mode, string> = { car: "#1a73e8", transit: "#1a73e8", walk: "#1a73e8" };
+const icon = (html: string, size: number) => L.divIcon({ html, className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+const youIcon = icon(`<div style="width:22px;height:22px;border-radius:50%;background:#1a73e8;border:4px solid #fff;box-shadow:0 0 0 10px rgba(26,115,232,.22),0 2px 6px rgba(0,0,0,.4)"></div>`, 22);
+const bubble = (txt: string, bg: string) =>
+  L.divIcon({ html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;font:700 11px system-ui;padding:3px 7px;border-radius:12px;background:${bg};color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)">${txt}</div>`, className: "", iconSize: [0, 0] });
 
-function Camera({ me, to, routes, follow }: { me: LatLng; to: LatLng | null; routes: RouteOut[]; follow: boolean }) {
+function Camera({ me, focus, follow }: { me: LatLng; focus: [number, number][]; follow: boolean }) {
   const map = useMap();
   useEffect(() => {
     if (follow) map.setView([me.lat, me.lng], 17, { animate: true });
   }, [follow, me.lat, me.lng, map]);
-  const sig = routes.map((r) => r.shape.length).join(",");
+  const sig = focus.length ? `${focus[0]}|${focus.at(-1)}` : "";
   useEffect(() => {
-    if (follow || !routes.length) return;
-    const pts = routes.flatMap((r) => r.shape);
-    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [20, 90], paddingBottomRight: [20, 300] });
+    if (follow || focus.length < 2) return;
+    map.fitBounds(L.latLngBounds([...focus, [me.lat, me.lng]]), { paddingTopLeft: [30, 170], paddingBottomRight: [30, 330], maxZoom: 16 });
   }, [sig, follow]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (!routes.length && to) map.fitBounds(L.latLngBounds([[me.lat, me.lng], [to.lat, to.lng]]), { padding: [60, 60] });
-  }, [to?.lat]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
+function LongPress({ onPick }: { onPick: (p: LatLng) => void }) {
+  useMapEvents({ contextmenu: (e) => onPick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
   return null;
 }
 
 export default function WazeMap({
-  me, to, routes, selected, onSelect, state, judged, follow, onMapClick,
+  me, mode, opts, selected, onSelect, state, sim, follow, onPick, progress,
 }: {
-  me: LatLng; to: LatLng | null; routes: RouteOut[]; selected: string; onSelect: (id: string) => void;
-  state: ReturnType<typeof buildState>; judged: Judged[]; follow: boolean; onMapClick?: (p: LatLng) => void;
+  me: LatLng; mode: Mode; opts: Option[]; selected: string | null; onSelect: (k: string) => void;
+  state: ReturnType<typeof buildState>; sim: Sim; follow: boolean; onPick: (p: LatLng) => void; progress: number;
 }) {
-  const sel = routes.find((r) => r.id === selected);
-  const others = routes.filter((r) => r.id !== selected);
-  // One pin per hazard/crowd report, at the middle of its first segment.
-  const hazards = judged.filter((x) => ["hazard", "crowd"].includes(x.j.kind) && x.j.credible >= 0.4 && x.segments.length);
+  const sel = opts.find((o) => o.key === selected) ?? opts[0];
+  const others = opts.filter((o) => o !== sel);
   return (
-    <MapContainer center={[me.lat, me.lng]} zoom={15} className="h-full w-full" zoomControl={false} attributionControl={false}
-      ref={(m) => { if (m && onMapClick) { m.off("contextmenu"); m.on("contextmenu", (e) => onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng })); } }}>
+    <MapContainer center={[me.lat, me.lng]} zoom={15} className="h-full w-full" zoomControl={false} attributionControl={false} preferCanvas>
       <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" subdomains="abcd" />
-      <Camera me={me} to={to} routes={routes} follow={follow} />
+      <Camera me={me} focus={sel?.path ?? []} follow={follow} />
+      <LongPress onPick={onPick} />
+
+      {/* Live layer per mode: traffic for cars, sidewalk crowds for walkers */}
       {EDGES.map((e) => {
-        const s = state.edges[e.key];
-        if (!s || s.status === "open") return null;
-        return (
-          <Polyline key={e.key} positions={e.path} pathOptions={{ color: STATUS_COLOR[s.status], weight: 9, opacity: 0.55, dashArray: s.status === "unconfirmed" ? "4 8" : undefined, lineCap: "butt" }}>
-            <Tooltip sticky>{e.label} · {s.status}</Tooltip>
-          </Polyline>
-        );
+        const s = state.edges[e.key]?.status;
+        if (s === "closed") return <Polyline key={e.key} positions={e.path} pathOptions={{ color: "#b91c1c", weight: 6, opacity: 0.8, dashArray: "2 6" }}><Tooltip sticky>⛔ {e.label} closed</Tooltip></Polyline>;
+        const v = mode === "car" ? carCong(sim, e.key) : walkCrowd(sim, state, e.key);
+        if (v < 0.45 && s !== "unconfirmed") return null;
+        return <Polyline key={e.key} positions={e.path} pathOptions={{ color: s === "unconfirmed" ? "#a16207" : LEVEL[v > 0.8 ? 3 : 2], weight: 4, opacity: 0.55 }} />;
       })}
-      {others.map((r) => (
-        <Polyline key={r.id} positions={r.shape} eventHandlers={{ click: () => onSelect(r.id) }} pathOptions={{ color: "#94a3b8", weight: 7, opacity: 0.85 }} />
+
+      {others.map((o) => (
+        <Polyline key={o.key} positions={o.path} eventHandlers={{ click: () => onSelect(o.key) }} pathOptions={{ color: "#64748b", weight: 7, opacity: 0.6 }} />
       ))}
       {sel && (
         <>
-          <Polyline positions={sel.shape} pathOptions={{ color: "#0b3d91", weight: 12, opacity: 0.9 }} />
-          <Polyline positions={sel.shape} pathOptions={{ color: ROUTE_COLOR[sel.id], weight: 8, opacity: 1 }} />
+          <Polyline positions={sel.path} pathOptions={{ color: "#0b3d91", weight: 13, opacity: 0.9 }} />
+          <Polyline positions={sel.path} pathOptions={{ color: BASE[mode], weight: 9 }} />
+          {sel.legs.filter((l) => l.level >= 1).map((l) => <Polyline key={l.key} positions={l.path} pathOptions={{ color: LEVEL[l.level], weight: 9, lineCap: "butt" }} />)}
+          {progress > 0 && <Polyline positions={sel.path.slice(0, progress + 1)} pathOptions={{ color: "#94a3b8", weight: 9 }} />}
         </>
       )}
-      {STATIONS.map((st) => {
-        const s = state.stations[st.id];
-        if (!s || s.status === "open") return null;
-        return (
-          <Marker key={st.id} position={coord(st.a, st.s)} icon={pin(s.status === "closed" ? "⛔" : "⏳", s.status === "closed" ? "#ef4444" : "#f59e0b")}>
-            <Tooltip>{st.name} · {s.status}</Tooltip>
-          </Marker>
-        );
-      })}
-      {hazards.map((x) => {
-        const seg = x.segments[0];
-        const e = EDGES.find((k) => state.edges[k.key]?.reports.includes(x.r.id) && (("avenue" in seg) ? k.key.startsWith("A") : k.key.startsWith("S")));
-        if (!e) return null;
-        return (
-          <Marker key={x.r.id} position={e.path[0]} icon={pin(HAZ[x.j.kind] ?? "⚠️", x.j.kind === "hazard" ? "#f97316" : "#fbbf24")}>
-            <Tooltip>{x.r.text}</Tooltip>
-          </Marker>
-        );
-      })}
+
+      {mode === "transit" &&
+        STATIONS.map((st) => {
+          const load = stationLoad(sim, state, st.id);
+          const txt = load >= 2 ? "⛔ closed" : `🚇 ${Math.round(Math.min(1, load) * 100)}%`;
+          return <Marker key={st.id} position={coord(st.a, st.s)} icon={bubble(txt, load >= 2 ? "#7f1d1d" : load > 0.8 ? "#dc2626" : load > 0.5 ? "#f97316" : "#16a34a")}><Tooltip>{st.name} · {st.lines}</Tooltip></Marker>;
+        })}
+      {mode !== "transit" && sel?.station === undefined && null}
       {POIS.map((p) => (
-        <CircleMarker key={p.id} center={[p.lat, p.lng]} radius={sel?.poi?.id === p.id ? 0 : 5} pathOptions={{ color: "#9333ea", fillColor: "#fff", fillOpacity: 1, weight: 2 }}>
+        <CircleMarker key={p.id} center={[p.lat, p.lng]} radius={5} pathOptions={{ color: "#9333ea", fillColor: "#fff", fillOpacity: 1, weight: 2 }}>
           <Tooltip>{p.emoji} {p.name}</Tooltip>
         </CircleMarker>
       ))}
-      {sel?.poi && <Marker position={[sel.poi.lat, sel.poi.lng]} icon={pin(sel.poi.emoji, "#9333ea")} />}
-      {to && <Marker position={[to.lat, to.lng]} icon={pin("🏁", "#111827")} />}
+      {sel && <Marker position={sel.path.at(-1)!} icon={bubble(sel.mode === "transit" ? `🚇 ${sel.line}` : "🏁", "#111827")} />}
       <Marker position={[me.lat, me.lng]} icon={youIcon} zIndexOffset={1000} />
     </MapContainer>
   );

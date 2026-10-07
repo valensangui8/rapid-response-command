@@ -4,9 +4,9 @@
  * Client-safe: the policy (weights, thresholds, penalties) lives here in plain code.
  */
 
-export const AVES = ["10th", "9th", "8th", "7th", "6th", "5th"] as const;
-export const MIN_ST = 23;
-export const MAX_ST = 45;
+export const AVES = ["10th", "9th", "8th", "7th", "6th", "5th", "Madison", "Park", "Lex", "3rd", "2nd", "1st"] as const;
+export const MIN_ST = 14;
+export const MAX_ST = 59;
 // Each avenue's position at W 34th St; streets step north along the rotated Manhattan grid.
 const AT34: [number, number][] = [
   [40.7557, -74.0006],
@@ -15,6 +15,12 @@ const AT34: [number, number][] = [
   [40.7507, -73.9905],
   [40.7495, -73.9877],
   [40.7484, -73.9848],
+  [40.7476, -73.9829],
+  [40.7469, -73.9811],
+  [40.7459, -73.9789],
+  [40.745, -73.9767],
+  [40.744, -73.9744],
+  [40.7429, -73.9719],
 ];
 const STEP: [number, number] = [0.000635, 0.000462];
 
@@ -217,7 +223,7 @@ const ADJ = (() => {
   return m;
 })();
 
-function dijkstra(from: string, cost: (e: Edge) => number) {
+export function dijkstra(from: string, cost: (e: Edge) => number) {
   const dist = new Map<string, number>([[from, 0]]);
   const prev = new Map<string, Edge>();
   const done = new Set<string>();
@@ -236,7 +242,7 @@ function dijkstra(from: string, cost: (e: Edge) => number) {
   return { dist, prev };
 }
 
-function walkBack(prev: Map<string, Edge>, from: string, to: string) {
+export function walkBack(prev: Map<string, Edge>, from: string, to: string) {
   const out: Edge[] = [];
   let cur = to;
   while (cur !== from) {

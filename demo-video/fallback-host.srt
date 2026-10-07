@@ -1,0 +1,31 @@
+1
+00:00:00,010 --> 00:00:15,585
+It's two in the afternoon. Dinner starts at five, and Resy just went down. The restaurant can't see who's coming tonight. But those bookings aren't gone. They're scattered across email, texts, voicemail, DMs and the point of sale. Meet Fallback Host.
+
+2
+00:00:15,900 --> 00:00:30,775
+One click, and Jev, TypeSafe's decision model, reads every message. For each one it decides: is this an existing booking, a new request, a change, or a cancellation? Does it match someone already in the book? Does the manager need to see it?
+
+3
+00:00:31,469 --> 00:00:42,394
+Every answer comes with a calibrated probability. Here, Jev is ninety nine percent sure this is an existing booking, and flags an Amex Platinum guest for the manager.
+
+4
+00:00:42,695 --> 00:01:01,145
+Code turns those judgments into tonight's floor. Tables are assigned, duplicates merge across channels and languages, a severe nut allergy is flagged, and a conflict is caught hours early. David wants five seats, there's no table, so he gets alternatives now, not at seven P M.
+
+5
+00:01:01,245 --> 00:01:10,895
+Guests who call reach a voice agent. Minh asks about his booking. Jev finds him in the rebuilt book, confirms it, and offers a free dessert for the trouble.
+
+6
+00:01:11,297 --> 00:01:28,272
+Then we turn the outage into outreach. One click posts to Instagram, Google, X, the website and the door. Had a table tonight? Message us for a free glass of prosecco. Guests reply, friends refer friends, and Jev catches the freeloader with no real details.
+
+7
+00:01:28,372 --> 00:01:43,422
+Prepayments are the strongest proof. Jev matches Stripe charges to bookings, ignores a lunch bill and a gift card, and recovers a party of three that existed nowhere else. At the door, the last four digits confirm a guest instantly.
+
+8
+00:01:43,522 --> 00:02:00,772
+When Resy comes back, Fallback Host lists exactly what to enter first, so nothing gets double booked. And from now on, the book is backed up outside Resy. A lost afternoon becomes a one minute recovery, with happier guests. The AI proposes. The host decides.
