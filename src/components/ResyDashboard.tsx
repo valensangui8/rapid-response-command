@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { campaignReplies, messages as demoMessages, restaurant, type Booking, type Charge, type Message } from "@/lib/resy";
 import type { Campaign, ChargeJudgment, MessageExtraction, MessageJudgment } from "@/lib/resyAi";
 import { fmt, reconcile, resetIds, type Action } from "@/lib/resyBook";
-import { JevFace } from "./JevStage";
+import { PixelFloor, PixelJev } from "./Pixel";
+import VoiceAgent from "./VoiceAgent";
 
 type Judged = { m: Message; j?: MessageJudgment; x?: MessageExtraction; outcome?: string };
 const INTENT_LABEL: Record<string, string> = {
@@ -14,7 +15,7 @@ const INTENT_LABEL: Record<string, string> = {
   question: "question",
   irrelevant: "ignore",
 };
-const CH_ICON: Record<string, string> = { email: "✉️", sms: "💬", voicemail: "📞", instagram: "📷", staff: "🧑‍🍳", google: "🔎", manual: "✍️", x: "𝕏", pos: "🧾" };
+const CH_ICON: Record<string, string> = { email: "✉️", sms: "💬", voicemail: "📞", instagram: "📷", staff: "🧑‍🍳", google: "🔎", manual: "✍️", x: "𝕏", pos: "🧾", phone: "☎️" };
 const STATUS_COLOR: Record<Booking["status"], string> = {
   verified: "bg-emerald-600 border-emerald-400",
   unverified: "bg-amber-600 border-amber-400",
@@ -60,7 +61,7 @@ export default function ResyDashboard() {
     fetch("/api/status").then((r) => r.json()).then((s) => setJevLive(s.jev));
   }, []);
 
-  async function ingest(m: Message) {
+  async function ingest(m: Message): Promise<{ j: MessageJudgment; x: MessageExtraction; outcome: string; book: Booking[] } | null> {
     setFeed((f) => [{ m }, ...f]);
     setCurrent({ m });
     setThinking(true);
@@ -79,12 +80,17 @@ export default function ResyDashboard() {
       const judged = { m, j: judgment, x: extraction, outcome: res.outcome };
       setFeed((f) => f.map((it) => (it.m.id === m.id ? judged : it)));
       setCurrent(judged);
+      setThinking(false);
+      await new Promise((r) => setTimeout(r, 900)); // let the audience see the verdict
+      return { j: judgment, x: extraction, outcome: res.outcome, book: res.book };
     } catch (e) {
       setFeed((f) => f.map((it) => (it.m.id === m.id ? { ...it, outcome: `error: ${String(e).slice(0, 60)}` } : it)));
+      setThinking(false);
+      return null;
     }
-    setThinking(false);
-    await new Promise((r) => setTimeout(r, 900)); // let the audience see the verdict
   }
+
+  const treat = (id: string) => setBook((bk) => (bookRef.current = bk.map((b) => (b.id === id ? { ...b, status: "verified", dessert: true } : b))));
 
   async function run() {
     setRunning(true);
@@ -151,7 +157,7 @@ export default function ResyDashboard() {
   const mood: "calm" | "concerned" | "alarm" | "skeptical" = !j ? "calm" : j.manager > 0.6 ? "alarm" : j.intent === "irrelevant" ? "skeptical" : j.urgency > 2.2 ? "concerned" : "calm";
 
   return (
-    <div className="flex h-screen flex-col bg-slate-950 text-slate-100">
+    <div className="bw flex h-screen flex-col bg-slate-950 text-slate-100">
       <div className="bg-red-700 px-4 py-1 text-center text-sm font-semibold">⚠ RESY OFFLINE since {restaurant.outageSince} · Fallback Host is rebuilding tonight’s book</div>
       <header className="flex flex-wrap items-center gap-4 border-b border-slate-800 px-4 py-2">
         <div className="mr-auto">
@@ -208,7 +214,7 @@ export default function ResyDashboard() {
         <section className="flex min-h-0 flex-col gap-3 overflow-y-auto">
           <div className="flex gap-4 rounded-lg border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-3">
             <div className="flex w-32 shrink-0 flex-col items-center">
-              <JevFace mood={mood} thinking={thinking} idle={!current} />
+              <PixelJev mood={mood} thinking={thinking} />
               <div className="text-center text-[11px] text-slate-400">{thinking ? "Reading…" : current ? "Decided" : "Waiting"}</div>
             </div>
             <div className="min-w-0 flex-1 text-xs">
@@ -243,6 +249,8 @@ export default function ResyDashboard() {
             </div>
           </div>
 
+          <VoiceAgent ingest={ingest} treat={treat} />
+
           {campaign && (
             <div className="rounded-lg border border-fuchsia-800 bg-fuchsia-950/30 p-3 text-xs">
               <div className="mb-2 flex items-center justify-between">
@@ -273,38 +281,26 @@ export default function ResyDashboard() {
           {/* Floor timeline */}
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
             <div className="mb-2 flex items-center justify-between text-sm">
-              <h2 className="font-semibold">Tonight’s floor (rebuilt)</h2>
+              <h2 className="font-semibold">Tonight’s floor · live</h2>
               <div className="flex gap-2 text-[10px]">
-                <Legend c="bg-emerald-600" t="verified (2+ sources / guest replied)" />
-                <Legend c="bg-amber-600" t="unverified (1 source)" />
-                <Legend c="bg-sky-600" t="new, held" />
+                <Legend c="lg-solid" t="verified" />
+                <Legend c="lg-check" t="1 source" />
+                <Legend c="lg-hatch" t="new, held" />
               </div>
             </div>
             <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
               <span className="rounded bg-slate-800 px-2 py-0.5">👻 Tuesday avg {restaurant.typicalCovers} covers → ~{ghosts} still unaccounted → hold {bufferTables} buffer table{bufferTables === 1 ? "" : "s"} for walk-ups who had a booking</span>
               {waitlist.length > 0 && <span className="rounded bg-slate-800 px-2 py-0.5">⏳ Waitlist: {waitlist.map((w) => `${w.name} (${w.partySize} @ ${fmt(w.time)})`).join(", ")}</span>}
             </div>
-            <div className="overflow-x-auto">
-              <div className="grid min-w-[640px] text-[10px]" style={{ gridTemplateColumns: `48px repeat(${restaurant.slots.length}, 1fr)` }}>
-                <div />
-                {restaurant.slots.map((s) => (
-                  <div key={s} className="border-l border-slate-800 pl-1 text-slate-500">{fmt(s).replace(":00", "")}</div>
+            <PixelFloor book={book} />
+            {overbooked > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1 text-[11px]">
+                <b className="pixel-blink">NO TABLE:</b>
+                {live.filter((b) => !b.table).map((b) => (
+                  <span key={b.id} className="bg-red-700 px-1.5">{b.name} · {b.partySize} @ {fmt(b.time)}</span>
                 ))}
-                {restaurant.tables.map((t) => (
-                  <Row key={t.id} table={t} book={book} />
-                ))}
-                {overbooked > 0 && (
-                  <>
-                    <div className="py-1 font-semibold text-red-400">NO TABLE</div>
-                    <div className="col-span-full -mt-5 ml-12 flex flex-wrap gap-1 py-1" style={{ gridColumn: `2 / span ${restaurant.slots.length}` }}>
-                      {live.filter((b) => !b.table).map((b) => (
-                        <span key={b.id} className="rounded bg-red-700 px-1.5 py-0.5">{b.name} · {b.partySize} @ {fmt(b.time)}</span>
-                      ))}
-                    </div>
-                  </>
-                )}
               </div>
-            </div>
+            )}
           </div>
           <PaymentsPanel
             book={book}

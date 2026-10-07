@@ -19,7 +19,7 @@ export const restaurant = {
   ],
 };
 
-export type Channel = "email" | "sms" | "voicemail" | "instagram" | "staff" | "google" | "manual" | "x" | "pos";
+export type Channel = "email" | "sms" | "voicemail" | "instagram" | "staff" | "google" | "manual" | "x" | "pos" | "phone";
 export type Message = { id: string; channel: Channel; from: string; received: string; text: string };
 
 export type Booking = {
