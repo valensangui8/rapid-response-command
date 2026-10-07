@@ -46,8 +46,8 @@ export default function Dashboard() {
   async function triage(report: RawReport) {
     setFeed((f) => [{ report }, ...f]);
     try {
-      const openIncidents = incRef.current.filter((i) => i.status !== "dismissed").map((i) => ({ id: i.id, summary: i.summary }));
-      const res = await fetch("/api/triage", { method: "POST", body: JSON.stringify({ report, openIncidents }) });
+      const openIncidents = incRef.current.filter((i) => i.status !== "dismissed").map((i) => ({ id: i.id, summary: i.summary, location: i.reports[0].extraction.locationHint }));
+      const res = await fetch("/api/triage", { method: "POST", body: JSON.stringify({ report, openIncidents }), signal: AbortSignal.timeout(20000) });
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as TriagedReport & { ms: number };
       setFeed((f) => f.map((x) => (x.report.id === report.id ? { ...x, triaged: data, ms: data.ms } : x)));

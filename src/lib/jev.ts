@@ -24,7 +24,7 @@ export const SEVERITY_LEVELS = [
   "Critical: immediate threat to life right now (trapped in rising water, unconscious, fire with people inside, life-support failing)",
 ] as const;
 
-export type OpenIncidentRef = { id: string; summary: string };
+export type OpenIncidentRef = { id: string; summary: string; location: string };
 
 export async function judgeReport(report: RawReport, openIncidents: OpenIncidentRef[]): Promise<Judgment> {
   const c = getClient();
@@ -45,7 +45,7 @@ async function jevJudge(c: TypeSafeClient, report: RawReport, openIncidents: Ope
   };
 
   const dupCriteria: Record<string, string | null> = { new: "This report describes a different event than every open incident" };
-  for (const inc of openIncidents.slice(-25)) dupCriteria[inc.id] = `The same real-world event as: ${inc.summary}`;
+  for (const inc of openIncidents.slice(-25)) dupCriteria[inc.id] = `The same real-world event as: ${inc.summary} (location: ${inc.location})`;
 
   const res = await c.systemOne({
     state,
@@ -62,7 +62,7 @@ async function jevJudge(c: TypeSafeClient, report: RawReport, openIncidents: Ope
         false: "Vague, second-hand ('heard', 'someone said'), sensational, or unverifiable claim",
       }),
       ...(openIncidents.length
-        ? { duplicate: choice("Does `report` describe the same real-world event as one of `open_incidents`? Same place and same situation counts as the same event, even if worded differently or in another language.", dupCriteria) }
+        ? { duplicate: choice("Does `report` describe the same real-world event as one of `open_incidents`? It is the same event only if it is the same specific place (same building, street, or station) AND the same situation, even if worded differently or in another language. Similar situations in different or unknown places are different events.", dupCriteria) }
         : {}),
     },
   });
@@ -85,7 +85,7 @@ async function jevJudge(c: TypeSafeClient, report: RawReport, openIncidents: Ope
 }
 
 /** Keyword fallback so the demo still runs without a TypeSafe key. */
-function mockJudge(report: RawReport, openIncidents: OpenIncidentRef[]): Judgment {
+export function mockJudge(report: RawReport, openIncidents: OpenIncidentRef[]): Judgment {
   const t = report.text.toLowerCase();
   const has = (...w: string[]) => w.some((x) => t.includes(x));
   const category = has("oxygen", "oxigeno", "bleeding", "dialysis", "fever", "lafyèv", "panic")

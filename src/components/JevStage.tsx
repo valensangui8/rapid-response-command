@@ -51,7 +51,8 @@ export default function JevStage({ queue, onConsumed, live }: { queue: StageItem
         : j.severity >= 1.8
           ? "concerned"
           : "calm";
-  const show = phase === "decide" || phase === "verdict";
+  const done = phase === "verdict" || (phase === "idle" && !!current); // keep last verdict on screen while waiting
+  const show = phase === "decide" || done;
   const cats = j ? Object.entries(j.categoryProbs).sort((a, b) => b[1] - a[1]).slice(0, 3) : [];
 
   return (
@@ -68,10 +69,10 @@ export default function JevStage({ queue, onConsumed, live }: { queue: StageItem
         <div className="flex w-40 shrink-0 flex-col items-center">
           <JevFace mood={mood} thinking={phase === "read"} idle={phase === "idle"} />
           <div className="mt-1 text-center text-[11px] text-slate-400">
-            {phase === "idle" && "Esperando reportes…"}
+            {phase === "idle" && !current && "Esperando reportes…"}
             {phase === "read" && "Leyendo…"}
             {phase === "decide" && "Decidiendo…"}
-            {phase === "verdict" && moodLine(mood)}
+            {done && moodLine(mood)}
           </div>
         </div>
 
@@ -106,7 +107,7 @@ export default function JevStage({ queue, onConsumed, live }: { queue: StageItem
                 <YesNo label="¿Persona vulnerable?" p={j!.vulnerable} show={show} delay={450} />
                 <YesNo label="¿Es creíble (no rumor)?" p={j!.credible} show={show} delay={550} />
 
-                <div className={`flex items-center transition-all duration-500 ${phase === "verdict" ? "scale-100 opacity-100" : "scale-75 opacity-0"}`}>
+                <div className={`flex items-center transition-all duration-500 ${done ? "scale-100 opacity-100" : "scale-75 opacity-0"}`}>
                   {current.priority !== null && (
                     <div className="jev-stamp rounded-lg border-2 px-3 py-1.5 text-center" style={{ borderColor: priorityColor(current.priority) }}>
                       <div className="text-lg font-black" style={{ color: priorityColor(current.priority) }}>P{current.priority}</div>

@@ -6,7 +6,7 @@ import type { Incident, Resource, TriagedReport } from "./types";
  * Jev gives raw calibrated judgments; this file turns them into priority + routing.
  */
 export const WEIGHTS = { severity: 0.45, lifeThreat: 0.3, vulnerable: 0.15, corroboration: 0.1 };
-export const HUMAN_REVIEW_CONFIDENCE = 0.55;
+export const HUMAN_REVIEW_CONFIDENCE = 0.5;
 
 export function scoreIncident(inc: Omit<Incident, "priority" | "needsHuman" | "reasons">) {
   const corroboration = Math.min(1, (inc.reports.length - 1) / 3);
@@ -26,8 +26,11 @@ export function scoreIncident(inc: Omit<Incident, "priority" | "needsHuman" | "r
   if (credibility < 0.4) reasons.push(`likely rumor (credibility ${(credibility * 100).toFixed(0)}%)`);
 
   const first = inc.reports[0].judgment;
+  // Uncertainty only matters when the case could matter (a confused rumor about nothing doesn't need a human).
+  const matters = inc.severity >= 2 || inc.lifeThreat > 0.4;
   const needsHuman =
-    inc.reports.some((r) => r.judgment.categoryConfidence < HUMAN_REVIEW_CONFIDENCE || r.judgment.severityConfidence < HUMAN_REVIEW_CONFIDENCE) ||
+    (matters &&
+      inc.reports.some((r) => r.judgment.categoryConfidence < HUMAN_REVIEW_CONFIDENCE || r.judgment.severityConfidence < HUMAN_REVIEW_CONFIDENCE)) ||
     (credibility > 0.35 && credibility < 0.65 && inc.severity >= 2.5);
   if (needsHuman) reasons.push(`low model confidence → human review (cat ${(first.categoryConfidence * 100).toFixed(0)}%)`);
 
