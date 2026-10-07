@@ -10,7 +10,8 @@ import type { Extraction, Incident, RawReport } from "./types";
  */
 export const LLM_MODEL = process.env.LLM_MODEL ?? "google/gemini-2.5-flash";
 export const FAST_MODEL = process.env.FAST_MODEL ?? "google/gemini-2.5-flash";
-export const llmAvailable = () => !!(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN);
+// On Vercel the OIDC token is injected per request, so being deployed counts as available.
+export const llmAvailable = () => !!(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN || process.env.VERCEL);
 
 const extractionSchema = z.object({
   summary: z.string().describe("<=12 word English summary of the event, include place name"),
