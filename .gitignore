@@ -46,3 +46,4 @@ next-env.d.ts
 /video/.argo
 /video/test-results
 /video/videos
+video/hq/

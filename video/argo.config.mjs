@@ -19,8 +19,8 @@ export default defineConfig({
   export: {
     preset: 'slow',
     crf: 18,
-    outputWidth: 1920,
-    outputHeight: 1080,
+    outputWidth: Number(process.env.OUT_W || 1920),
+    outputHeight: Number(process.env.OUT_H || 1080),
     speedRamp: { gapSpeed: 2.0 },
   },
   overlays: { autoBackground: true },
