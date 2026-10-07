@@ -198,7 +198,7 @@ function SeverityGauge({ value, show }: { value: number; show: boolean }) {
 }
 
 /** Jev: a friendly round bot. Eyes scan while reading; face reacts to the verdict. */
-function JevFace({ mood, thinking, idle }: { mood: Mood; thinking: boolean; idle: boolean }) {
+export function JevFace({ mood, thinking, idle }: { mood: Mood; thinking: boolean; idle: boolean }) {
   const color = { calm: "#38bdf8", concerned: "#f59e0b", alarm: "#ef4444", skeptical: "#a78bfa" }[mood];
   const mouth = {
     calm: "M38 66 Q50 74 62 66",

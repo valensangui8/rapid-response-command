@@ -1,0 +1,154 @@
+import { restaurant, type Booking, type Message } from "./resy";
+import type { MessageExtraction, MessageJudgment } from "./resyAi";
+
+export type Action = {
+  id: string;
+  kind: "reconfirm" | "confirm_new" | "offer_alt" | "ack_cancel" | "confirm_change" | "change_conflict" | "reply_question" | "manager";
+  bookingId: string | null;
+  title: string;
+  detail: string;
+  priority: number; // 0..100
+  status: "pending" | "sent";
+  draft?: string;
+  language: string;
+};
+
+const toMin = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + (m || 0);
+};
+export const fmt = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+};
+
+/** Smallest free table that fits, with no overlap within the turn time. */
+export function findTable(book: Booking[], size: number, time: string, ignoreId?: string): string | null {
+  const start = toMin(time);
+  const busy = new Set(
+    book
+      .filter((b) => b.id !== ignoreId && b.table && b.status !== "cancelled" && Math.abs(toMin(b.time) - start) < restaurant.turnMinutes)
+      .map((b) => b.table!),
+  );
+  const fit = restaurant.tables.filter((t) => t.seats >= size && !busy.has(t.id)).sort((a, b) => a.seats - b.seats);
+  return fit[0]?.id ?? null;
+}
+
+export function alternatives(book: Booking[], size: number, time: string): string[] {
+  const start = toMin(time);
+  return restaurant.slots
+    .filter((s) => s !== time && Math.abs(toMin(s) - start) <= 90 && findTable(book, size, s))
+    .sort((a, b) => Math.abs(toMin(a) - start) - Math.abs(toMin(b) - start))
+    .slice(0, 2);
+}
+
+let n = 0;
+const nid = (p: string) => `${p}${++n}`;
+
+/** Apply one judged message to the book; returns new book and the actions it creates. */
+/** Regex backup when the LLM misses party size or time. */
+function backfill(m: Message, x: MessageExtraction): MessageExtraction {
+  const t = m.text;
+  const size = x.partySize ?? Number(t.match(/(?:party of|table for|for)\s+(\d{1,2})/i)?.[1] ?? t.match(/(\d{1,2})\s+(?:people|guests|personas)/i)?.[1] ?? NaN);
+  let time = x.time;
+  if (!time) {
+    const mt = t.match(/(\d{1,2})(?::(\d{2}))?\s*(pm|p\.m\.)/i);
+    if (mt) time = `${(Number(mt[1]) % 12) + 12}:${mt[2] ?? "00"}`;
+  }
+  return { ...x, partySize: Number.isFinite(size) ? size : null, time };
+}
+
+export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: MessageExtraction): { book: Booking[]; actions: Action[]; outcome: string } {
+  const x = backfill(m, x0);
+  const actions: Action[] = [];
+  const target = j.matchOf ? book.find((b) => b.id === j.matchOf) : undefined;
+  const lang = x.language || "English";
+  const prio = (base: number) => Math.round(Math.min(100, base + j.urgency * 12 + j.manager * 15));
+  let next = book;
+  let outcome = "";
+
+  const managerAction = (b: Booking | undefined) => {
+    if (j.manager > 0.6)
+      actions.push({ id: nid("a"), kind: "manager", bookingId: b?.id ?? null, title: `Manager: ${b?.name ?? m.from}`, detail: x.notes || m.text.slice(0, 90), priority: prio(40), status: "pending", language: lang });
+  };
+
+  switch (j.intent) {
+    case "existing_booking": {
+      if (target) {
+        next = book.map((b) => (b.id === target.id ? { ...b, sources: [...b.sources, m.id], status: "verified", notes: [b.notes, x.notes].filter(Boolean).join(" · "), phone: b.phone ?? x.phone } : b));
+        outcome = `Corroborates ${target.name} → verified`;
+        managerAction(target);
+        break;
+      }
+      if (!x.time || !x.partySize) {
+        outcome = "Booking claim missing details → call back";
+        actions.push({ id: nid("a"), kind: "reconfirm", bookingId: null, title: `Call back ${x.name ?? m.from}`, detail: "Claims a booking but details are missing", priority: prio(35), status: "pending", language: lang });
+        break;
+      }
+      const table = findTable(book, x.partySize, x.time);
+      const b: Booking = { id: nid("B"), name: x.name ?? m.from, partySize: x.partySize, time: x.time, phone: x.phone, notes: x.notes, sources: [m.id], status: "unverified", table, vip: j.manager > 0.6 };
+      next = [...book, b];
+      outcome = `Recovered ${b.name} · ${b.partySize} @ ${fmt(b.time)}${table ? ` → ${table}` : " → NO TABLE (overbooked!)"}`;
+      actions.push({ id: nid("a"), kind: "reconfirm", bookingId: b.id, title: `Reconfirm ${b.name}`, detail: `${b.partySize} @ ${fmt(b.time)} · ${table ?? "needs table"}${b.phone ? ` · ${b.phone}` : ""}`, priority: prio(table ? 20 : 60), status: "pending", language: lang });
+      managerAction(b);
+      break;
+    }
+    case "new_request": {
+      const size = x.partySize ?? 2;
+      const time = x.time ?? "19:00";
+      const table = findTable(book, size, time);
+      if (table) {
+        const b: Booking = { id: nid("B"), name: x.name ?? m.from, partySize: size, time, phone: x.phone, notes: x.notes, sources: [m.id], status: "requested", table, vip: false };
+        next = [...book, b];
+        outcome = `Available: ${table} @ ${fmt(time)} (held)`;
+        actions.push({ id: nid("a"), kind: "confirm_new", bookingId: b.id, title: `Confirm new: ${b.name}`, detail: `${size} @ ${fmt(time)} → ${table} (held)`, priority: prio(25), status: "pending", language: lang });
+      } else {
+        const alts = alternatives(book, size, time);
+        outcome = `Full @ ${fmt(time)} → offer ${alts.map(fmt).join(" / ") || "waitlist"}`;
+        actions.push({ id: nid("a"), kind: "offer_alt", bookingId: null, title: `Offer alternative: ${x.name ?? m.from}`, detail: `${size} @ ${fmt(time)} is full → ${alts.map(fmt).join(" or ") || "waitlist"}`, priority: prio(25), status: "pending", language: lang });
+      }
+      break;
+    }
+    case "modify": {
+      if (!target) {
+        outcome = "Change request but booking not found → call";
+        actions.push({ id: nid("a"), kind: "reconfirm", bookingId: null, title: `Find booking: ${x.name ?? m.from}`, detail: m.text.slice(0, 90), priority: prio(40), status: "pending", language: lang });
+        break;
+      }
+      const size = x.partySize ?? target.partySize;
+      const time = x.time ?? target.time;
+      const table = findTable(book, size, time, target.id);
+      if (table) {
+        next = book.map((b) => (b.id === target.id ? { ...b, partySize: size, time, table, sources: [...b.sources, m.id], status: "verified" } : b));
+        outcome = `${target.name}: now ${size} @ ${fmt(time)} → ${table}`;
+        actions.push({ id: nid("a"), kind: "confirm_change", bookingId: target.id, title: `Confirm change: ${target.name}`, detail: `${target.partySize}→${size} guests @ ${fmt(time)} → ${table}`, priority: prio(30), status: "pending", language: lang });
+      } else {
+        outcome = `${target.name}: change doesn't fit → offer options`;
+        actions.push({ id: nid("a"), kind: "change_conflict", bookingId: target.id, title: `Can't fit change: ${target.name}`, detail: `${size} @ ${fmt(time)} has no table · alt: ${alternatives(book, size, time).map(fmt).join(", ") || "none"}`, priority: prio(45), status: "pending", language: lang });
+      }
+      break;
+    }
+    case "cancel": {
+      const t = target ?? book.find((b) => x.name && b.name.toLowerCase().includes(x.name.toLowerCase().split(" ")[0]));
+      if (t) {
+        next = book.map((b) => (b.id === t.id ? { ...b, status: "cancelled", table: null, sources: [...b.sources, m.id] } : b));
+        outcome = `${t.name} cancelled → ${t.table ?? "table"} freed`;
+        actions.push({ id: nid("a"), kind: "ack_cancel", bookingId: t.id, title: `Acknowledge cancel: ${t.name}`, detail: `${t.table ?? ""} freed @ ${fmt(t.time)}`, priority: prio(10), status: "pending", language: lang });
+      } else {
+        outcome = "Cancellation for a booking not in book → noted";
+      }
+      break;
+    }
+    case "question":
+      outcome = "Question → auto-reply";
+      actions.push({ id: nid("a"), kind: "reply_question", bookingId: null, title: `Reply: ${m.from}`, detail: m.text.slice(0, 90), priority: prio(5), status: "pending", language: lang });
+      break;
+    default:
+      outcome = "Ignored (not about tonight)";
+  }
+  return { book: next, actions, outcome };
+}
+
+export function resetIds() {
+  n = 0;
+}
