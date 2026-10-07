@@ -6,6 +6,8 @@ export const restaurant = {
   outageSince: "1:12 PM",
   now: "2:05 PM",
   turnMinutes: 90,
+  typicalCovers: 52, // avg Tuesday covers (POS history)
+  perk: "a complimentary glass of prosecco",
   slots: ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00"],
   tables: [
     { id: "T1", seats: 2 }, { id: "T2", seats: 2 }, { id: "T3", seats: 2 }, { id: "T4", seats: 2 },
@@ -14,7 +16,7 @@ export const restaurant = {
   ],
 };
 
-export type Channel = "email" | "sms" | "voicemail" | "instagram" | "staff" | "google" | "manual";
+export type Channel = "email" | "sms" | "voicemail" | "instagram" | "staff" | "google" | "manual" | "x";
 export type Message = { id: string; channel: Channel; from: string; received: string; text: string };
 
 export type Booking = {
@@ -25,7 +27,8 @@ export type Booking = {
   phone: string | null;
   notes: string;
   sources: string[]; // message ids
-  status: "verified" | "unverified" | "requested" | "cancelled";
+  status: "verified" | "unverified" | "requested" | "cancelled" | "waitlist";
+  perk?: "granted" | "pending_check";
   table: string | null;
   vip: boolean;
 };
@@ -47,4 +50,13 @@ export const messages: Message[] = [
   { id: "m14", channel: "sms", from: "(718) 555-0161", received: "2:01 PM", text: "Priya here — so sorry, need to cancel tonight 6pm, kid is sick" },
   { id: "m15", channel: "email", from: "deals@wine-distributor.com", received: "2:02 PM", text: "Fall portfolio tasting next Tuesday — reserve your spot! 20% off Barolo cases." },
   { id: "m16", channel: "instagram", from: "@nyc_dates", received: "2:04 PM", text: "Table for 2 at 7pm tonight possible?" },
+];
+
+/** Replies that arrive after we post the recovery campaign ("had a booking tonight? DM us → free prosecco"). */
+export const campaignReplies: Message[] = [
+  { id: "c1", channel: "instagram", from: "@lucia.gomez", received: "2:21 PM", text: "Saw your story!! We have a reservation tonight under Gomez, 4 people at 7:30. Phone 917-555-0188 🥂" },
+  { id: "c2", channel: "google", from: "Google Business message", received: "2:24 PM", text: "Hi, Raj Patel here. Booked 2 for 9:00 PM tonight, confirmation # RX-88213. Thanks for the heads up" },
+  { id: "c3", channel: "x", from: "@freebie_hunter", received: "2:26 PM", text: "yo I def had a reservation tonight lol, where's my free drink" },
+  { id: "c4", channel: "sms", from: "(347) 555-0133", received: "2:29 PM", text: "Hernandez, party of 3, 8:30 tonight. Saw your post on IG, still on?" },
+  { id: "c5", channel: "instagram", from: "@ana_eats", received: "2:31 PM", text: "Reservation for Ana Torres 2 ppl 6:30 tonight! Can't wait" },
 ];

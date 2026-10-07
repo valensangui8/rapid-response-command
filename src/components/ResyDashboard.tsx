@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { messages as demoMessages, restaurant, type Booking, type Message } from "@/lib/resy";
-import type { MessageExtraction, MessageJudgment } from "@/lib/resyAi";
+import { campaignReplies, messages as demoMessages, restaurant, type Booking, type Message } from "@/lib/resy";
+import type { Campaign, MessageExtraction, MessageJudgment } from "@/lib/resyAi";
 import { fmt, reconcile, resetIds, type Action } from "@/lib/resyBook";
 import { JevFace } from "./JevStage";
 
@@ -14,12 +14,13 @@ const INTENT_LABEL: Record<string, string> = {
   question: "question",
   irrelevant: "ignore",
 };
-const CH_ICON: Record<string, string> = { email: "✉️", sms: "💬", voicemail: "📞", instagram: "📷", staff: "🧑‍🍳", google: "🔎", manual: "✍️" };
+const CH_ICON: Record<string, string> = { email: "✉️", sms: "💬", voicemail: "📞", instagram: "📷", staff: "🧑‍🍳", google: "🔎", manual: "✍️", x: "𝕏" };
 const STATUS_COLOR: Record<Booking["status"], string> = {
   verified: "bg-emerald-600 border-emerald-400",
   unverified: "bg-amber-600 border-amber-400",
   requested: "bg-sky-600 border-sky-400",
   cancelled: "bg-slate-700 border-slate-500 line-through opacity-50",
+  waitlist: "bg-slate-700 border-slate-500",
 };
 
 export default function ResyDashboard() {
@@ -33,6 +34,27 @@ export default function ResyDashboard() {
   const [manual, setManual] = useState("");
   const [jevLive, setJevLive] = useState(false);
   const stop = useRef(false);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [posted, setPosted] = useState(0);
+  const [campaignBusy, setCampaignBusy] = useState(false);
+
+  async function launchCampaign() {
+    setCampaignBusy(true);
+    setPosted(0);
+    const r = await fetch("/api/resy/campaign", { method: "POST" });
+    setCampaign(await r.json());
+    for (let i = 1; i <= 5; i++) {
+      await new Promise((res) => setTimeout(res, 450));
+      setPosted(i);
+    }
+    // Replies start arriving.
+    stop.current = false;
+    for (const m of campaignReplies) {
+      if (stop.current) break;
+      await ingest({ ...m, id: `${m.id}-${Date.now()}` });
+    }
+    setCampaignBusy(false);
+  }
 
   useEffect(() => {
     fetch("/api/status").then((r) => r.json()).then((s) => setJevLive(s.jev));
@@ -82,12 +104,17 @@ export default function ResyDashboard() {
     setActions([]);
     setFeed([]);
     setCurrent(null);
+    setCampaign(null);
+    setPosted(0);
   }
 
   async function draft(a: Action) {
     const b = book.find((x) => x.id === a.bookingId);
     const kindText: Record<Action["kind"], string> = {
       reconfirm: "Reconfirm their existing reservation since our system is down",
+      perk: `Thank them for reaching out after our post, confirm their table, and tell them ${restaurant.perk} is on us tonight`,
+      waitlist_offer: `Good news: a table just opened for them (${a.detail}). Hold for 15 minutes, reply YES to take it`,
+      suspicious: "Politely ask for the name the reservation is under, the time and party size so we can find it",
       confirm_new: "Confirm their new table is booked",
       offer_alt: `Their requested time is full; offer these alternatives: ${a.detail}`,
       ack_cancel: "Acknowledge their cancellation kindly",
@@ -111,10 +138,14 @@ export default function ResyDashboard() {
       setBook((bk) => (bookRef.current = bk.map((b) => (b.id === a.bookingId ? { ...b, status: "verified" } : b))));
   };
 
-  const live = book.filter((b) => b.status !== "cancelled");
+  const live = book.filter((b) => b.status !== "cancelled" && b.status !== "waitlist");
+  const waitlist = book.filter((b) => b.status === "waitlist");
   const covers = live.reduce((s, b) => s + b.partySize, 0);
   const queue = [...actions].sort((a, b) => (a.status === b.status ? b.priority - a.priority : a.status === "pending" ? -1 : 1));
   const overbooked = live.filter((b) => !b.table).length;
+  const ghosts = Math.max(0, restaurant.typicalCovers - covers);
+  const bufferTables = Math.ceil(ghosts / 3.5);
+  const perks = live.filter((b) => b.perk === "granted").length;
   const j = current?.j;
   const mood: "calm" | "concerned" | "alarm" | "skeptical" = !j ? "calm" : j.manager > 0.6 ? "alarm" : j.intent === "irrelevant" ? "skeptical" : j.urgency > 2.2 ? "concerned" : "calm";
 
@@ -131,9 +162,14 @@ export default function ResyDashboard() {
         <Stat label="verified" value={live.filter((b) => b.status === "verified").length} />
         <Stat label="to confirm" value={actions.filter((a) => a.status === "pending").length} />
         <Stat label="overbooked" value={overbooked} warn={overbooked > 0} />
+        <Stat label="👻 missing covers" value={`~${ghosts}`} />
+        <Stat label="🎁 perks" value={perks} />
         <span className={`rounded-full px-2 py-0.5 text-xs ${jevLive ? "bg-emerald-900 text-emerald-300" : "bg-amber-900 text-amber-300"}`}>Jev {jevLive ? "live" : "mock"}</span>
         <button onClick={running ? () => (stop.current = true) : run} className="rounded bg-red-600 px-3 py-1.5 text-sm font-semibold hover:bg-red-500">
           {running ? "■ Stop" : "▶ Scan inbox, voicemail & DMs"}
+        </button>
+        <button onClick={launchCampaign} disabled={campaignBusy || running} className="rounded bg-fuchsia-600 px-3 py-1.5 text-sm font-semibold hover:bg-fuchsia-500 disabled:opacity-40">
+          {campaignBusy ? "📣 Campaign live…" : "📣 Launch recovery campaign"}
         </button>
         <button onClick={reset} className="rounded border border-slate-700 px-3 py-1.5 text-sm">Reset</button>
       </header>
@@ -206,6 +242,32 @@ export default function ResyDashboard() {
             </div>
           </div>
 
+          {campaign && (
+            <div className="rounded-lg border border-fuchsia-800 bg-fuchsia-950/30 p-3 text-xs">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-sm font-semibold">📣 Recovery campaign · turn the outage into a reason to reach out</h2>
+                <span className="text-fuchsia-300">Reward: {restaurant.perk} · Jev filters freeloaders</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
+                {([
+                  ["📷 Instagram story", campaign.instagram_story],
+                  ["🔎 Google Business", campaign.google_post],
+                  ["𝕏 Post", campaign.x_post],
+                  ["🌐 Website banner", campaign.website_banner],
+                  ["🚪 Door sign + QR", campaign.door_sign],
+                ] as const).map(([ch, text], i) => (
+                  <div key={ch} className={`rounded border p-2 transition-all duration-500 ${posted > i ? "border-fuchsia-500 bg-slate-900 opacity-100" : "border-slate-800 opacity-40"}`}>
+                    <div className="mb-1 flex justify-between font-semibold">
+                      <span>{ch}</span>
+                      <span className={posted > i ? "text-emerald-400" : "text-slate-500"}>{posted > i ? "live ✓" : "posting…"}</span>
+                    </div>
+                    <p className="text-slate-300">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Floor timeline */}
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
             <div className="mb-2 flex items-center justify-between text-sm">
@@ -215,6 +277,10 @@ export default function ResyDashboard() {
                 <Legend c="bg-amber-600" t="unverified (1 source)" />
                 <Legend c="bg-sky-600" t="new, held" />
               </div>
+            </div>
+            <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+              <span className="rounded bg-slate-800 px-2 py-0.5">👻 Tuesday avg {restaurant.typicalCovers} covers → ~{ghosts} still unaccounted → hold {bufferTables} buffer table{bufferTables === 1 ? "" : "s"} for walk-ups who had a booking</span>
+              {waitlist.length > 0 && <span className="rounded bg-slate-800 px-2 py-0.5">⏳ Waitlist: {waitlist.map((w) => `${w.name} (${w.partySize} @ ${fmt(w.time)})`).join(", ")}</span>}
             </div>
             <div className="overflow-x-auto">
               <div className="grid min-w-[640px] text-[10px]" style={{ gridTemplateColumns: `48px repeat(${restaurant.slots.length}, 1fr)` }}>
@@ -289,7 +355,7 @@ function Row({ table, book }: { table: { id: string; seats: number }; book: Book
               className={`jev-pop absolute top-0.5 h-5 truncate rounded border px-1 leading-5 ${STATUS_COLOR[b.status]}`}
               style={{ left: `${(i / restaurant.slots.length) * 100}%`, width: `${w}%` }}
             >
-              {b.vip ? "★ " : ""}{b.name} · {b.partySize}
+              {b.vip ? "★ " : ""}{b.perk === "granted" ? "🎁 " : ""}{b.name} · {b.partySize}
             </div>
           );
         })}

@@ -3,7 +3,7 @@ import type { MessageExtraction, MessageJudgment } from "./resyAi";
 
 export type Action = {
   id: string;
-  kind: "reconfirm" | "confirm_new" | "offer_alt" | "ack_cancel" | "confirm_change" | "change_conflict" | "reply_question" | "manager";
+  kind: "reconfirm" | "perk" | "waitlist_offer" | "suspicious" | "confirm_new" | "offer_alt" | "ack_cancel" | "confirm_change" | "change_conflict" | "reply_question" | "manager";
   bookingId: string | null;
   title: string;
   detail: string;
@@ -49,7 +49,13 @@ const nid = (p: string) => `${p}${++n}`;
 /** Regex backup when the LLM misses party size or time. */
 function backfill(m: Message, x: MessageExtraction): MessageExtraction {
   const t = m.text;
-  const size = x.partySize ?? Number(t.match(/(?:party of|table for|for)\s+(\d{1,2})/i)?.[1] ?? t.match(/(\d{1,2})\s+(?:people|guests|personas)/i)?.[1] ?? NaN);
+  const size =
+    x.partySize ??
+    Number(
+      t.match(/(\d{1,2})\s*(?:people|ppl|guests|personas|pax)/i)?.[1] ??
+        t.match(/(?:party of|table for|booked|reservation for|para)\s+(\d{1,2})(?![\d:]|\s*(?:pm|am|p\.m))/i)?.[1] ??
+        NaN,
+    );
   let time = x.time;
   if (!time) {
     const mt = t.match(/(\d{1,2})(?::(\d{2}))?\s*(pm|p\.m\.)/i);
@@ -61,6 +67,7 @@ function backfill(m: Message, x: MessageExtraction): MessageExtraction {
 export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: MessageExtraction): { book: Booking[]; actions: Action[]; outcome: string } {
   const x = backfill(m, x0);
   const actions: Action[] = [];
+  const fromCampaign = m.id.startsWith("c");
   const target = j.matchOf ? book.find((b) => b.id === j.matchOf) : undefined;
   const lang = x.language || "English";
   const prio = (base: number) => Math.round(Math.min(100, base + j.urgency * 12 + j.manager * 15));
@@ -74,6 +81,11 @@ export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: M
 
   switch (j.intent) {
     case "existing_booking": {
+      if (fromCampaign && (j.plausible < 0.5 || !x.partySize || !x.time)) {
+        outcome = `🚩 Vague claim (plausible ${Math.round(j.plausible * 100)}%) → ask for name/time, no perk yet`;
+        actions.push({ id: nid("a"), kind: "suspicious", bookingId: null, title: `Verify claim: ${m.from}`, detail: "Campaign reply without verifiable details. Ask for name + time + party size.", priority: prio(5), status: "pending", language: lang });
+        break;
+      }
       if (target) {
         next = book.map((b) => (b.id === target.id ? { ...b, sources: [...b.sources, m.id], status: "verified", notes: [b.notes, x.notes].filter(Boolean).join(" · "), phone: b.phone ?? x.phone } : b));
         outcome = `Corroborates ${target.name} → verified`;
@@ -86,9 +98,13 @@ export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: M
         break;
       }
       const table = findTable(book, x.partySize, x.time);
-      const b: Booking = { id: nid("B"), name: x.name ?? m.from, partySize: x.partySize, time: x.time, phone: x.phone, notes: x.notes, sources: [m.id], status: "unverified", table, vip: j.manager > 0.6 };
+      const b: Booking = { id: nid("B"), name: x.name ?? m.from, partySize: x.partySize, time: x.time, phone: x.phone, notes: x.notes, sources: [m.id], status: fromCampaign ? "verified" : "unverified", table, vip: j.manager > 0.6, perk: fromCampaign ? "granted" : undefined };
       next = [...book, b];
-      outcome = `Recovered ${b.name} · ${b.partySize} @ ${fmt(b.time)}${table ? ` → ${table}` : " → NO TABLE (overbooked!)"}`;
+      outcome = `${fromCampaign ? "🎁 Campaign → " : ""}Recovered ${b.name} · ${b.partySize} @ ${fmt(b.time)}${table ? ` → ${table}` : " → NO TABLE (overbooked!)"}`;
+      if (fromCampaign) {
+        actions.push({ id: nid("a"), kind: "perk", bookingId: b.id, title: `🎁 Confirm + perk: ${b.name}`, detail: `${b.partySize} @ ${fmt(b.time)} · ${table ?? "needs table"} · plausible ${Math.round(j.plausible * 100)}%`, priority: prio(15), status: "pending", language: lang });
+        break;
+      }
       actions.push({ id: nid("a"), kind: "reconfirm", bookingId: b.id, title: `Reconfirm ${b.name}`, detail: `${b.partySize} @ ${fmt(b.time)} · ${table ?? "needs table"}${b.phone ? ` · ${b.phone}` : ""}`, priority: prio(table ? 20 : 60), status: "pending", language: lang });
       managerAction(b);
       break;
@@ -104,7 +120,8 @@ export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: M
         actions.push({ id: nid("a"), kind: "confirm_new", bookingId: b.id, title: `Confirm new: ${b.name}`, detail: `${size} @ ${fmt(time)} → ${table} (held)`, priority: prio(25), status: "pending", language: lang });
       } else {
         const alts = alternatives(book, size, time);
-        outcome = `Full @ ${fmt(time)} → offer ${alts.map(fmt).join(" / ") || "waitlist"}`;
+        next = [...book, { id: nid("B"), name: x.name ?? m.from, partySize: size, time, phone: x.phone, notes: x.notes, sources: [m.id], status: "waitlist", table: null, vip: false }];
+        outcome = `Full @ ${fmt(time)} → offer ${alts.map(fmt).join(" / ") || "nothing"} + waitlist`;
         actions.push({ id: nid("a"), kind: "offer_alt", bookingId: null, title: `Offer alternative: ${x.name ?? m.from}`, detail: `${size} @ ${fmt(time)} is full → ${alts.map(fmt).join(" or ") || "waitlist"}`, priority: prio(25), status: "pending", language: lang });
       }
       break;
@@ -134,6 +151,17 @@ export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: M
         next = book.map((b) => (b.id === t.id ? { ...b, status: "cancelled", table: null, sources: [...b.sources, m.id] } : b));
         outcome = `${t.name} cancelled → ${t.table ?? "table"} freed`;
         actions.push({ id: nid("a"), kind: "ack_cancel", bookingId: t.id, title: `Acknowledge cancel: ${t.name}`, detail: `${t.table ?? ""} freed @ ${fmt(t.time)}`, priority: prio(10), status: "pending", language: lang });
+        // Freed table → first waitlisted guest that now fits.
+        for (const w of next.filter((b) => b.status === "waitlist")) {
+          const wt = findTable(next, w.partySize, w.time) ? w.time : alternatives(next, w.partySize, w.time)[0];
+          const table = wt ? findTable(next, w.partySize, wt) : null;
+          if (wt && table) {
+            next = next.map((b) => (b.id === w.id ? { ...b, status: "requested", table, time: wt } : b));
+            outcome += ` → 🔁 offered to ${w.name}`;
+            actions.push({ id: nid("a"), kind: "waitlist_offer", bookingId: w.id, title: `🔁 Freed table → ${w.name}`, detail: `${w.partySize} @ ${fmt(wt)} → ${table} (held 15 min)`, priority: prio(35), status: "pending", language: lang });
+            break;
+          }
+        }
       } else {
         outcome = "Cancellation for a booking not in book → noted";
       }
