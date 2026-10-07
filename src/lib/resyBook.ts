@@ -60,6 +60,10 @@ function backfill(m: Message, x: MessageExtraction): MessageExtraction {
   if (!time) {
     const mt = t.match(/(\d{1,2})(?::(\d{2}))?\s*(pm|p\.m\.)/i);
     if (mt) time = `${(Number(mt[1]) % 12) + 12}:${mt[2] ?? "00"}`;
+    else {
+      const bare = t.match(/\b(\d{1,2}):(\d{2})\b/); // "8:30" with no am/pm → dinner time
+      if (bare) time = `${Number(bare[1]) < 11 ? Number(bare[1]) + 12 : bare[1]}:${bare[2]}`;
+    }
   }
   // Different free models format differently: normalize "8:30 PM" -> "20:30", "en" -> "English".
   if (time && !/^\d{2}:\d{2}$/.test(time)) {
