@@ -3,7 +3,7 @@ import type { MessageExtraction, MessageJudgment } from "./resyAi";
 
 export type Action = {
   id: string;
-  kind: "reconfirm" | "perk" | "waitlist_offer" | "suspicious" | "confirm_new" | "offer_alt" | "ack_cancel" | "confirm_change" | "change_conflict" | "reply_question" | "manager";
+  kind: "reconfirm" | "perk" | "referral" | "waitlist_offer" | "suspicious" | "confirm_new" | "offer_alt" | "ack_cancel" | "confirm_change" | "change_conflict" | "reply_question" | "manager";
   bookingId: string | null;
   title: string;
   detail: string;
@@ -98,7 +98,14 @@ export function reconcile(book: Booking[], m: Message, j: MessageJudgment, x0: M
         break;
       }
       const table = findTable(book, x.partySize, x.time);
-      const b: Booking = { id: nid("B"), name: x.name ?? m.from, partySize: x.partySize, time: x.time, phone: x.phone, notes: x.notes, sources: [m.id], status: fromCampaign ? "verified" : "unverified", table, vip: j.manager > 0.6, perk: fromCampaign ? "granted" : undefined };
+      const isReferral = fromCampaign && j.referral > 0.9;
+      const b: Booking = { id: nid("B"), name: x.name ?? m.from, partySize: x.partySize, time: x.time, phone: x.phone, notes: x.notes, sources: [m.id], status: fromCampaign && !isReferral ? "verified" : "unverified", table, vip: j.manager > 0.6, perk: fromCampaign && !isReferral ? "granted" : undefined, referredBy: isReferral ? m.from : undefined };
+      if (isReferral) {
+        next = [...book, b];
+        outcome = `🤝 Referral by ${m.from} → recovered ${b.name} · ${b.partySize} @ ${fmt(b.time)}${table ? ` → ${table}` : " → NO TABLE"}`;
+        actions.push({ id: nid("a"), kind: "referral", bookingId: b.id, title: `🤝 Contact referred guest: ${b.name}`, detail: `${b.partySize} @ ${fmt(b.time)} · ${table ?? "needs table"}${b.phone ? ` · ${b.phone}` : ""} · referred by ${m.from} (both get dessert)`, priority: prio(30), status: "pending", language: lang });
+        break;
+      }
       next = [...book, b];
       outcome = `${fromCampaign ? "🎁 Campaign → " : ""}Recovered ${b.name} · ${b.partySize} @ ${fmt(b.time)}${table ? ` → ${table}` : " → NO TABLE (overbooked!)"}`;
       if (fromCampaign) {

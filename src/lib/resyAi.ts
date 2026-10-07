@@ -25,6 +25,7 @@ export type MessageJudgment = {
   manager: number;
   urgency: number;
   plausible: number;
+  referral: number;
   mock: boolean;
 };
 export type MessageExtraction = { name: string | null; partySize: number | null; time: string | null; phone: string | null; notes: string; language: string };
@@ -40,7 +41,7 @@ export async function judgeMessage(m: Message, book: BookRef[]): Promise<Message
   try {
     const res = await c.systemOne({
       state: {
-        situation: `Restaurant ${restaurant.name}. Our reservation system (Resy) has been down since ${restaurant.outageSince}. It is ${restaurant.now}. We are rebuilding tonight's book from emails, texts, voicemails and DMs. We also posted on Instagram, Google and X: guests who had a reservation tonight and message us their details get ${restaurant.perk}.`,
+        situation: `Restaurant ${restaurant.name}. Our reservation system (Resy) has been down since ${restaurant.outageSince}. It is ${restaurant.now}. We are rebuilding tonight's book from emails, texts, voicemails and DMs. We also posted on Instagram, Google and X: guests who had a reservation tonight and message us their details get ${restaurant.perk}. And if you know SOMEONE ELSE who has a reservation tonight, tell us and you both get ${restaurant.referralPerk}.`,
         message: { channel: m.channel, from: m.from, received: m.received, text: m.text },
         tonights_book: book.slice(-40),
       },
@@ -54,6 +55,7 @@ export async function judgeMessage(m: Message, book: BookRef[]): Promise<Message
           true: "Specific: name plus time/party size, confirmation number, or phone",
           false: "Vague or freeloading: no name/time/size, or just asking for the freebie",
         }),
+        referral: noul("Is `message` written by someone telling us about ANOTHER person's reservation (a friend, relative or coworker), rather than their own?"),
         urgency: score("How soon must the restaurant respond to `message`?", [
           "Never / no reply needed",
           "Sometime today",
@@ -73,6 +75,7 @@ export async function judgeMessage(m: Message, book: BookRef[]): Promise<Message
       manager: a.manager.noul,
       urgency: a.urgency.score,
       plausible: a.plausible.noul,
+      referral: a.referral.noul,
       mock: false,
     };
   } catch (e) {
@@ -84,11 +87,11 @@ export async function judgeMessage(m: Message, book: BookRef[]): Promise<Message
 export function mockJudge(m: Message): MessageJudgment {
   const t = m.text.toLowerCase();
   const intent: Intent = t.includes("cancel") ? "cancel" : t.includes("new reservation") || t.includes("booked") || t.includes("booking") ? "existing_booking" : t.includes("make it") ? "modify" : t.includes("table for") || t.includes("any chance") ? "new_request" : t.includes("walk-in") ? "question" : t.includes("tasting") ? "irrelevant" : "existing_booking";
-  return { intent, intentProbs: { [intent]: 0.7 }, intentConfidence: 0.5, matchOf: null, matchConfidence: 0.5, manager: /allergy|client|8 at/.test(t) ? 0.9 : 0.1, urgency: 2, plausible: /\d/.test(t) ? 0.9 : 0.1, mock: true };
+  return { intent, intentProbs: { [intent]: 0.7 }, intentConfidence: 0.5, matchOf: null, matchConfidence: 0.5, manager: /allergy|client|8 at/.test(t) ? 0.9 : 0.1, urgency: 2, plausible: /\d/.test(t) ? 0.9 : 0.1, referral: /coworker|sister|friend|brother/.test(t) ? 0.9 : 0.05, mock: true };
 }
 
 const schema = z.object({
-  name: z.string().nullable().describe("Guest name, or null"),
+  name: z.string().nullable().describe("Name of the person the reservation is UNDER (if someone writes about a friend's booking, the friend's name), or null"),
   partySize: z.number().nullable().describe("Number of guests (the NEW number if they are changing it), or null"),
   time: z.string().nullable().describe("Reservation time tonight in 24h HH:MM, e.g. 19:30, or null"),
   phone: z.string().nullable().describe("Phone number formatted (XXX) XXX-XXXX, or null"),
@@ -132,6 +135,7 @@ const campaignSchema = z.object({
   x_post: z.string().describe("Post for X, max 240 chars"),
   website_banner: z.string().describe("One-line website banner, max 120 chars"),
   door_sign: z.string().describe("Printed sign at the door / QR caption, max 120 chars"),
+  referral_post: z.string().describe("Second Instagram post: know someone with a reservation tonight? Tag them / send their name → you both get the referral reward. Max 200 chars"),
 });
 export type Campaign = z.infer<typeof campaignSchema>;
 
@@ -143,13 +147,14 @@ export async function draftCampaign(): Promise<Campaign> {
     x_post: `Resy is down but dinner isn't. Booked at ${restaurant.name} tonight? Reply/DM name + time → confirmed + ${perk} 🥂`,
     website_banner: `Booked tonight? Resy is down — text us your name & time for ${perk}.`,
     door_sign: `Had a reservation tonight? Scan to confirm and get ${perk}.`,
+    referral_post: `Know someone with a table at ${restaurant.name} tonight? Tag them or DM us their name — ${restaurant.referralPerk} 🍰`,
   };
   if (!llmAvailable()) return fallback;
   try {
     const { output } = await generateText({
       model: FAST_MODEL,
       output: Output.object({ schema: campaignSchema }),
-      prompt: `Restaurant ${restaurant.name} in NYC. Our reservation system Resy has been down since ${restaurant.outageSince}. Write a recovery campaign so guests who had a reservation TONIGHT message us their name, time and party size. Reward: ${perk}. Warm, confident, a little playful, never blame Resy harshly. Each piece must clearly ask for: name + time + party size.`,
+      prompt: `Restaurant ${restaurant.name} in NYC. Our reservation system Resy has been down since ${restaurant.outageSince}. Write a recovery campaign so guests who had a reservation TONIGHT message us their name, time and party size. Reward: ${perk}. Also a referral post: anyone who tells us about a FRIEND with a reservation tonight gets ${restaurant.referralPerk}. Warm, confident, a little playful, never blame Resy harshly. Each piece must clearly ask for: name + time + party size.`,
     });
     return output;
   } catch {

@@ -43,7 +43,7 @@ export default function ResyDashboard() {
     setPosted(0);
     const r = await fetch("/api/resy/campaign", { method: "POST" });
     setCampaign(await r.json());
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
       await new Promise((res) => setTimeout(res, 450));
       setPosted(i);
     }
@@ -111,7 +111,8 @@ export default function ResyDashboard() {
   async function draft(a: Action) {
     const b = book.find((x) => x.id === a.bookingId);
     const kindText: Record<Action["kind"], string> = {
-      reconfirm: "Reconfirm their existing reservation since our system is down",
+      reconfirm: `Reconfirm their existing reservation since our system is down. If they reply YES to reconfirm, ${restaurant.reconfirmPerk} tonight as thanks`,
+      referral: `A friend (${a.detail.split("referred by ")[1] ?? "a friend"}) told us about their reservation. Confirm it, and tell them they and their friend each get a free dessert tonight`,
       perk: `Thank them for reaching out after our post, confirm their table, and tell them ${restaurant.perk} is on us tonight`,
       waitlist_offer: `Good news: a table just opened for them (${a.detail}). Hold for 15 minutes, reply YES to take it`,
       suspicious: "Politely ask for the name the reservation is under, the time and party size so we can find it",
@@ -134,8 +135,8 @@ export default function ResyDashboard() {
 
   const send = (a: Action) => {
     setActions((all) => all.map((x) => (x.id === a.id ? { ...x, status: "sent" } : x)));
-    if (a.bookingId && (a.kind === "confirm_new" || a.kind === "reconfirm"))
-      setBook((bk) => (bookRef.current = bk.map((b) => (b.id === a.bookingId ? { ...b, status: "verified" } : b))));
+    if (a.bookingId && (a.kind === "confirm_new" || a.kind === "reconfirm" || a.kind === "referral"))
+      setBook((bk) => (bookRef.current = bk.map((b) => (b.id === a.bookingId ? { ...b, status: "verified", dessert: a.kind !== "confirm_new" || b.dessert } : b))));
   };
 
   const live = book.filter((b) => b.status !== "cancelled" && b.status !== "waitlist");
@@ -145,7 +146,7 @@ export default function ResyDashboard() {
   const overbooked = live.filter((b) => !b.table).length;
   const ghosts = Math.max(0, restaurant.typicalCovers - covers);
   const bufferTables = Math.ceil(ghosts / 3.5);
-  const perks = live.filter((b) => b.perk === "granted").length;
+  const perks = live.filter((b) => b.perk === "granted").length + live.filter((b) => b.dessert).length + live.filter((b) => b.referredBy).length * 2;
   const j = current?.j;
   const mood: "calm" | "concerned" | "alarm" | "skeptical" = !j ? "calm" : j.manager > 0.6 ? "alarm" : j.intent === "irrelevant" ? "skeptical" : j.urgency > 2.2 ? "concerned" : "calm";
 
@@ -248,13 +249,14 @@ export default function ResyDashboard() {
                 <h2 className="text-sm font-semibold">📣 Recovery campaign · turn the outage into a reason to reach out</h2>
                 <span className="text-fuchsia-300">Reward: {restaurant.perk} · Jev filters freeloaders</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-2 xl:grid-cols-6">
                 {([
                   ["📷 Instagram story", campaign.instagram_story],
                   ["🔎 Google Business", campaign.google_post],
                   ["𝕏 Post", campaign.x_post],
                   ["🌐 Website banner", campaign.website_banner],
                   ["🚪 Door sign + QR", campaign.door_sign],
+                  ["🤝 Referral post", campaign.referral_post],
                 ] as const).map(([ch, text], i) => (
                   <div key={ch} className={`rounded border p-2 transition-all duration-500 ${posted > i ? "border-fuchsia-500 bg-slate-900 opacity-100" : "border-slate-800 opacity-40"}`}>
                     <div className="mb-1 flex justify-between font-semibold">
@@ -304,6 +306,7 @@ export default function ResyDashboard() {
               </div>
             </div>
           </div>
+          <BackupPanel book={book} />
         </section>
 
         {/* Actions */}
@@ -355,7 +358,7 @@ function Row({ table, book }: { table: { id: string; seats: number }; book: Book
               className={`jev-pop absolute top-0.5 h-5 truncate rounded border px-1 leading-5 ${STATUS_COLOR[b.status]}`}
               style={{ left: `${(i / restaurant.slots.length) * 100}%`, width: `${w}%` }}
             >
-              {b.vip ? "★ " : ""}{b.perk === "granted" ? "🎁 " : ""}{b.name} · {b.partySize}
+              {b.vip ? "★ " : ""}{b.perk === "granted" ? "🎁 " : ""}{b.referredBy ? "🤝 " : ""}{b.dessert ? "🍰 " : ""}{b.name} · {b.partySize}
             </div>
           );
         })}
@@ -396,6 +399,57 @@ function Bar({ label, value, strong, delay = 0 }: { label: string; value: number
       <div className="h-1.5 rounded bg-slate-800">
         <div className={`h-1.5 rounded transition-all duration-700 ${strong ? "bg-sky-400" : "bg-slate-600"}`} style={{ width: `${w * 100}%` }} />
       </div>
+    </div>
+  );
+}
+
+/** Never again: from now on the book is continuously copied outside Resy. */
+function BackupPanel({ book }: { book: Booking[] }) {
+  const [snapshots, setSnapshots] = useState(0);
+  const [flash, setFlash] = useState(false);
+  const [last, setLast] = useState<string>("—");
+  useEffect(() => {
+    if (!book.length) return;
+    const t = setTimeout(() => {
+      setSnapshots((n) => n + 1);
+      setLast(new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }));
+      setFlash(true);
+      setTimeout(() => setFlash(false), 700);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [book]);
+
+  function download() {
+    const rows = [["name", "party", "time", "table", "phone", "status", "notes", "sources"], ...book.map((b) => [b.name, b.partySize, fmt(b.time), b.table ?? "", b.phone ?? "", b.status, b.notes, b.sources.length])];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = `lupa-book-tonight-${Date.now()}.csv`;
+    a.click();
+  }
+
+  const dests = [
+    ["✉️", "Email to manager@lupatrattoria.com", "every change + every 15 min"],
+    ["📊", "Google Sheet “Tonight’s Book”", "live sync"],
+    ["📱", "Offline copy on host iPad", "works with no Wi-Fi"],
+    ["🖨️", "Printed run sheet", "auto-prints at 4:30 PM"],
+  ];
+  return (
+    <div className={`rounded-lg border p-3 text-xs transition-colors ${flash ? "border-emerald-400 bg-emerald-950/40" : "border-slate-800 bg-slate-900/50"}`}>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">🛡️ Never again: automatic book backups (outside Resy)</h2>
+        <button onClick={download} disabled={!book.length} className="rounded bg-slate-700 px-2 py-1 disabled:opacity-40">⬇ Download backup (CSV)</button>
+      </div>
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        {dests.map(([icon, name, freq]) => (
+          <div key={name} className="rounded bg-slate-900 p-2">
+            <div className="font-semibold">{icon} {name}</div>
+            <div className="text-slate-400">{freq}</div>
+            <div className={snapshots ? "text-emerald-400" : "text-slate-500"}>{snapshots ? `✓ synced ${last}` : "waiting for data"}</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-slate-500">{snapshots} snapshots today · next outage, the book is one click away instead of buried in inboxes.</p>
     </div>
   );
 }

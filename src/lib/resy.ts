@@ -8,6 +8,8 @@ export const restaurant = {
   turnMinutes: 90,
   typicalCovers: 52, // avg Tuesday covers (POS history)
   perk: "a complimentary glass of prosecco",
+  reconfirmPerk: "a dessert on the house",
+  referralPerk: "a free dessert for you AND your friend",
   slots: ["17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00"],
   tables: [
     { id: "T1", seats: 2 }, { id: "T2", seats: 2 }, { id: "T3", seats: 2 }, { id: "T4", seats: 2 },
@@ -29,6 +31,8 @@ export type Booking = {
   sources: string[]; // message ids
   status: "verified" | "unverified" | "requested" | "cancelled" | "waitlist";
   perk?: "granted" | "pending_check";
+  dessert?: boolean;
+  referredBy?: string;
   table: string | null;
   vip: boolean;
 };
@@ -59,4 +63,6 @@ export const campaignReplies: Message[] = [
   { id: "c3", channel: "x", from: "@freebie_hunter", received: "2:26 PM", text: "yo I def had a reservation tonight lol, where's my free drink" },
   { id: "c4", channel: "sms", from: "(347) 555-0133", received: "2:29 PM", text: "Hernandez, party of 3, 8:30 tonight. Saw your post on IG, still on?" },
   { id: "c5", channel: "instagram", from: "@ana_eats", received: "2:31 PM", text: "Reservation for Ana Torres 2 ppl 6:30 tonight! Can't wait" },
+  { id: "c6", channel: "instagram", from: "@mike.r", received: "2:33 PM", text: "My coworker Elena Russo has a table for 4 at 8pm tonight, she's not on IG. Her number is 646-555-0172 🍰" },
+  { id: "c7", channel: "x", from: "@brooklyn_beth", received: "2:35 PM", text: "@LupaTrattoria my sister Kate Doyle booked 2 at 9:30 tonight for her birthday!!" },
 ];
