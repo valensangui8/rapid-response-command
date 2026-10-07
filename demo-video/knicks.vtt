@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00:00.030 --> 00:00:16.230
+The Knicks just won the championship at Madison Square Garden. Fifty thousand fans hit Midtown at the same moment. Streets close, Penn Station shuts its Seventh Avenue entrances, and every map app sends everyone to the same station. Meet Clear Path Home.
+
+00:00:16.549 --> 00:00:36.799
+The moment you open it, the app pulls every signal at once. NYPD and Notify NYC alerts, MTA status and turnstiles, DOT traffic sensors, social posts, and three one one calls. Watch the map fill in from your location. Green is clear, red is jammed, and every station shows how full it is.
+
+00:00:37.103 --> 00:00:56.403
+Jev, TypeSafe's decision model, judges every report. An official MTA alert counts in full. A viral post saying Herald Square is shut down? Jev gives it low credibility, and the MTA's own update overrides it. Two credible reports confirm a closure. One alone waits for a human.
+
+00:00:56.703 --> 00:01:13.553
+Now pick where you're going. Heading to Brooklyn, the usual two and three at Penn is closed. Instead of the packed Herald Square platform, the app recommends walking south to Twenty Third Street and boarding the C, with room to board. Walk, wait and ride, all in one arrival time.
+
+00:01:13.854 --> 00:01:20.354
+Driving instead? You get three routes, with congested blocks in red and the delay each one costs.
+
+00:01:20.655 --> 00:01:36.505
+Here's the twist. Every fan who follows a recommendation adds load to that station or road. As one platform fills up, the app shifts the next riders to another option. Instead of herding everyone into one crush, it spreads the crowd across the city.
+
+00:01:39.307 --> 00:01:45.757
+Tap go, and you get turn by turn directions, Waze style, that keep adapting as conditions change.
+
+00:01:46.058 --> 00:01:52.908
+Clear Path Home. Every signal, verified by Jev, turned into a way home that keeps the whole city moving.

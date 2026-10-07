@@ -145,7 +145,7 @@ export default function KnicksApp() {
 
   return (
     <div className="flex h-dvh w-full items-center justify-center bg-slate-200">
-      <div className="relative h-full w-full overflow-hidden bg-white text-slate-900 md:h-[860px] md:max-h-full md:w-[420px] md:rounded-[36px] md:border-[10px] md:border-slate-900 md:shadow-2xl">
+      <div id="phone" className="relative h-full w-full overflow-hidden bg-white text-slate-900 md:h-[860px] md:max-h-full md:w-[420px] md:rounded-[36px] md:border-[10px] md:border-slate-900 md:shadow-2xl">
         <div className="absolute inset-0">
           <WazeMap me={me} mode={nav?.mode ?? mode} opts={booting ? [] : nav ? [nav] : opts} reveal={boot} selected={sel?.key ?? null} onSelect={setSelected} state={state} sim={sim} follow={!!nav} onPick={(p) => { setPicked(p); setNav(null); }} progress={progress} />
         </div>
@@ -176,7 +176,7 @@ export default function KnicksApp() {
                 ))}
               </div>
             </div>
-            <div className="flex gap-1.5">
+            <div id="modes" className="flex gap-1.5">
               {MODES.map((m) => {
                 const best = all[m.id][0];
                 return (
@@ -200,7 +200,7 @@ export default function KnicksApp() {
         )}
 
         {/* ── Bottom sheet ── */}
-        <div className="absolute inset-x-0 bottom-0 z-[1000] max-h-[46%] overflow-y-auto rounded-t-3xl bg-white px-3 pb-4 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,.15)]">
+        <div id="sheet" className="absolute inset-x-0 bottom-0 z-[1000] max-h-[46%] overflow-y-auto rounded-t-3xl bg-white px-3 pb-4 pt-2 shadow-[0_-8px_24px_rgba(0,0,0,.15)]">
           <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-300" />
           {nav ? (
             <div className="flex items-center gap-3">
@@ -317,7 +317,7 @@ function BootOverlay({ boot, judged, onSkip }: { boot: number; judged: Judged[];
           <div className="h-full bg-cyan-400 transition-all" style={{ width: `${boot * 100}%` }} />
         </div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 z-[1000] rounded-t-3xl bg-white px-3 pb-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.15)]">
+      <div id="boot" className="absolute inset-x-0 bottom-0 z-[1000] rounded-t-3xl bg-white px-3 pb-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,.15)]">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-sm font-extrabold">Collecting live signals</div>
           <button onClick={onSkip} className="text-xs font-semibold text-blue-600">Skip</button>
